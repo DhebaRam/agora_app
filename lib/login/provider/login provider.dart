@@ -59,7 +59,7 @@ class LoginProvider extends ChangeNotifier {
     PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: verificationId, smsCode: value.toString());
     await auth.signInWithCredential(credential).then((value) async {
-      getAuthId();
+      getCurrentUserAuthId();
       userDetailsData();
       debugPrint("You are logged in successfully");
       setValue();
@@ -72,7 +72,7 @@ class LoginProvider extends ChangeNotifier {
       debugPrint("4error $error");
     });
   }
-  getAuthId(){
+  getCurrentUserAuthId(){
     final user = auth.currentUser;
     currentUserId = user!.uid;
   }

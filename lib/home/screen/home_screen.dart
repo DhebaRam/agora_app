@@ -1,10 +1,10 @@
 import 'dart:io';
-
+import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import '../../utils/app_colors.dart';
 import 'audio_call_screen.dart';
 
@@ -21,6 +21,20 @@ class _HomeScreenState extends State<HomeScreen> {
   // final user = auth.currentUser;
   // currentUserId = user!.uid;
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    FirebaseMessaging.instance.getInitialMessage();
+
+    FirebaseMessaging.onMessage.listen((message) {
+      if(message.notification != null) {
+        print(message.notification!.body);
+        print(message.notification!.title);
+      }
+    });
+  }
+  @override
   Widget build(BuildContext context) {
 
     double wid = MediaQuery.of(context).size.width;
@@ -31,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onWillPop: () => willPop(),
       child: Scaffold(
         backgroundColor: Colors.white,
+        appBar: AppBar(title: const Text("Contact"),backgroundColor: Colors.indigoAccent),
         body: Container(
           height: height,
           decoration: const BoxDecoration(
@@ -134,11 +149,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       IconButton(icon: const Icon(Icons.phone_outlined,color: Colors.black,size: 30), onPressed: () {
-                                        Navigator.push(
-                                            context, MaterialPageRoute(builder: (context) => const AudioCallScreen()));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(role: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),call: "voice")));
+                                        // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
                                       }),
                                       const SizedBox(width: 15),
-                                      IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () {  }),
+                                      IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(role: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),call: "video")));
+                                      }),
                                       const SizedBox(width: 10),
                                     ],
                                   ),
