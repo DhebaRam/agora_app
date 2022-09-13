@@ -5,8 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../login/provider/login provider.dart';
+import '../../notificationservice/model/local_notification_service.dart';
+import '../../notificationservice/screen/recive_call_screen.dart';
+import '../../utils/app&tokan_id.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/get_it.dart';
 import 'audio_call_screen.dart';
+import 'create_group_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,28 +22,102 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List listContactList = [];
+  List currentUser = [];
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseAuth auth = FirebaseAuth.instance;
+  final loginProvider = getIt<LoginProvider>();
   // final user = auth.currentUser;
   // currentUserId = user!.uid;
+
   @override
   void initState() {
+    // FirebaseMessaging.onBackgroundMessage((message) =>
+    //     Navigator.of(context).push(
+    //       MaterialPageRoute(
+    //         builder: (context) => RecivedScreen(
+    //           channel: message.notification!.body,
+    //           type: message.data.values.last,
+    //           clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+    //           name: message.data.values.first,
+    //         ),
+    //       ),
+    //     )
+    // );
+
+    // 1. This method call when app in terminated state and you get a notificationservice
+    // when you click on notificationservice app open from terminated state and you can get notificationservice data in this method
+    FirebaseMessaging.instance.getInitialMessage().then(
+          (message) {
+            debugPrint("FirebaseMessaging .instance.getInitialMessage");
+
+            // LocalNotificationService.createanddisplaynotification(message!);
+            if (message!.notification != null) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => RecivedScreen(
+                    channel: message.notification!.body,
+                    type: message.data.values.last,
+                    clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+                    name: message.data.values.first,
+                  ),
+                ),
+              );
+            }
+          }
+    );
+
+    // 2. This method only call when App in forground it mean app must be opened
+    FirebaseMessaging.onMessage.listen(
+          (message) {
+        print("FirebaseMessaging .onMessage.listen1111");
+        // LocalNotificationService.createanddisplaynotification(message);
+        if (message.notification != null) {
+          debugPrint("username....... ${message.data.values.elementAt(0)}");
+          debugPrint("username....... ${message.data.values}");
+          debugPrint("username....... ${message.data.values.first}");
+          debugPrint("username....... ${message.data.values.last}");
+          debugPrint("username....... ${message.data.values.elementAt(1)}");
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => RecivedScreen(
+                channel: message.notification!.body,
+                type: message.data.values.last,
+                clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+                name: message.data.values.first,
+              ),
+            ),
+          );
+
+        }
+      },
+    );
+
+    // 3. This method only call when App in background and not terminated(not closed)
+    FirebaseMessaging.onMessageOpenedApp.listen(
+          (message) {
+        print("FirebaseMessaging .onMessageOpenedApp.listen");
+        if (message.notification != null) {
+          LocalNotificationService.createanddisplaynotification(message);
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (context) => RecivedScreen(
+                channel: message.notification!.body,
+                type: message.data.values.last,
+                clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+                name: message.data.values.first,
+              ),
+            ),
+          );
+        }
+      },
+    );
     // TODO: implement initState
     super.initState();
-
-    FirebaseMessaging.instance.getInitialMessage();
-
-    FirebaseMessaging.onMessage.listen((message) {
-      if(message.notification != null) {
-        print(message.notification!.body);
-        print(message.notification!.title);
-      }
-    });
   }
   @override
   Widget build(BuildContext context) {
-
-    double wid = MediaQuery.of(context).size.width;
+    // double wid = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
     bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -55,120 +135,122 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: StreamBuilder<QuerySnapshot>(
-              stream: firestore.collection('use_details').where("auth_id", isNotEqualTo: "${auth.currentUser!.uid}").snapshots(),
-              builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          child: Column(
+            children: [
+              Padding(padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
+                child: GestureDetector(
+                  onTap: () {
+                    currentUser.clear();
+                    listContactList.clear();
+                    Stream<QuerySnapshot<Map<String, dynamic>>> userData = firestore.collection('use_details').where("group",isEqualTo: "false").snapshots();
+                    Stream<QuerySnapshot<Map<String, dynamic>>> currentUserData = firestore.collection('use_details').where("auth_id", isEqualTo: auth.currentUser!.uid).snapshots();
+                    userData.map((event) => event.docs.map((e) => listContactList.add(e.data())).toList()).toList();
+                    currentUserData.map((event) => event.docs.map((e) => currentUser.add(e.data())).toList()).toList();
+                    Navigator.push(context,MaterialPageRoute(builder: (context)=> CreateGroupScreen(listContactList,currentUser)));
 
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppColor.blue,));
-                if(snapshot.data!.size ==0) return const Center(child: Text("No Data found.."),);
-                if(snapshot.hasData) {
-
-                  return ListView.builder(
-                      itemCount: snapshot.data!.docs.length,
-                      itemBuilder: (context,index) {
-                        Timestamp timestampTime = snapshot.data!.docs[index].get("timestamp");
-                        DateTime date = timestampTime.toDate();
-                        String datetime =  date.day.toString() +"/"+ date.month.toString() +"/"+ date.year.toString() ;
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
-                          child: GestureDetector(
-                            /*onLongPress: () {
-                              showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      backgroundColor: AppColor.appColor,
-                                      content: const Text("Are you sure want to delete ?",textAlign: TextAlign.center ,),
-                                      actions: [
-                                        FlatButton(
-                                          color: AppColor.blue,
-                                          child: const Text('Yes',style: TextStyle(fontWeight: FontWeight.bold,color: AppColor.white),),
-                                          onPressed: () {
-                                            firestore.collection("drafts").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("personalDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("academicDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("referenceDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("skillsDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("userLanguageDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            firestore.collection("experienceDetails").doc(snapshot.data!.docs[index].id).delete();
-                                            Navigator.pop(context);
-                                          },
-                                        ),
-                                        FlatButton(
-                                          color: AppColor.blue,
-                                          child: const Text('No',style: TextStyle(fontWeight: FontWeight.bold,color: AppColor.white)),
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                        )
-                                      ],
-                                    );
-                                  });
-                            },*/
-                            child: Card(
-                              child: Column(
-                                children: [
-                                  /*if(index % 4 == 0 && index != 0)...{
-                                    SizedBox(
-                                      child: Card(
-                                        // color: AppColor.blue,
-                                        child: AdWidget(
-                                          ad:AdmobHelper.getBannerAd()..load(),
-                                          key: UniqueKey(),
-                                        ),
-                                      ),
-                                      height: 50,
-                                    ),
-                                  },*/
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Padding(
-                                          padding: isLandscape ? const EdgeInsets.only(left: 70) : const EdgeInsets.only(left: 15),
-                                          child: Container(
-                                              alignment: Alignment.center,
-                                              padding: const EdgeInsets.all(5),
-                                              decoration: BoxDecoration(
-                                                  color: AppColor.blue,
-                                                  borderRadius: BorderRadius.circular(100)),
-                                              child: const Icon(Icons.person,
-                                                  color: AppColor.white, size: 30))
-                                      ),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(left: 15),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text("${snapshot.data!.docs[index].get("user_name")}",style: const TextStyle(fontWeight: FontWeight.bold,color: AppColor.blue),),
-                                              Text(datetime.toString(),style: const TextStyle(color: AppColor.blue),),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(icon: const Icon(Icons.phone_outlined,color: Colors.black,size: 30), onPressed: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(role: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),call: "voice")));
-                                        // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
-                                      }),
-                                      const SizedBox(width: 15),
-                                      IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(role: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),call: "video")));
-                                      }),
-                                      const SizedBox(width: 10),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                ],
-                              ),),
+                  },
+                  child: Card(
+                      child: Row(
+                        children: [
+                          Padding(
+                              padding: isLandscape ? const EdgeInsets.only(left: 70,top: 5,bottom: 5) : const EdgeInsets.only(left: 15,bottom: 5,top: 5),
+                              child: Container(
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(100)),
+                                  child: const Icon(Icons.group,
+                                      color: AppColor.white, size: 30))
                           ),
-                        );
-                      });
-                }else{
-                  return const Center(child: Text("No Data found..",style: TextStyle(fontWeight: FontWeight.bold)));
-                }
-              }),
+                          const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 15),
+                              child: Text("New Group",style: TextStyle(fontWeight: FontWeight.bold),)
+                            ),
+                          ),
+                        ],
+                      ))
+                )),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(                                                //orderBy("timestamp",descending: true)
+                    stream: firestore.collection('use_details').where("auth_id", isNotEqualTo: auth.currentUser!.uid).snapshots(),
+                    builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppColor.blue,));
+                      if(snapshot.data!.size ==0) return const Center(child: Text("No Data found.."),);
+                      if(snapshot.hasData) {
+                        return ListView.builder(
+                            itemCount: snapshot.data!.docs.length,
+                            itemBuilder: (context,index) {
+                              Timestamp timestampTime = snapshot.data!.docs[index].get("timestamp");
+                              DateTime date = timestampTime.toDate();
+                              String datetime =  date.day.toString() +"/"+ date.month.toString() +"/"+ date.year.toString();
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
+                                child: GestureDetector(
+                                  child: Card(
+                                    child: /*Column(
+                                      children: [
+                                        const SizedBox(height: 2),*/
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Padding(
+                                                padding: isLandscape ? const EdgeInsets.only(left: 70) : const EdgeInsets.only(left: 15),
+                                                child: Container(
+                                                    alignment: Alignment.center,
+                                                    padding: const EdgeInsets.all(5),
+                                                    decoration: BoxDecoration(
+                                                        color: AppColor.blue,
+                                                        borderRadius: BorderRadius.circular(100)),
+                                                    child: snapshot.data!.docs[index].get("group") == "true" ? Icon(Icons.group, color: AppColor.white, size: 30) : Icon(Icons.person, color: AppColor.white, size: 30))
+                                            ),
+                                            Expanded(
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 15),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Text("${snapshot.data!.docs[index].get("user_name")}",style: const TextStyle(fontWeight: FontWeight.bold,color: AppColor.blue),),
+                                                    Text(datetime.toString(),style: const TextStyle(color: AppColor.blue),),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(icon: const Icon(Icons.phone_outlined,color: Colors.black,size: 30), onPressed: () async{
+                                              CollectionReference  collection = firestore.collection('use_details');
+                                              QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+                                              dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+                                              loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "voice", number: snapshot.data!.docs[index].get("phone_No"),channelName: channel)));
+                                              // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
+                                            }),
+                                            const SizedBox(width: 15),
+                                            IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () async{
+                                              CollectionReference  collection = firestore.collection('use_details');
+                                              QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+                                              dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+                                              loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "video", number: snapshot.data!.docs[index].get("phone_No"),channelName: channel)));
+                                            }),
+                                            const SizedBox(width: 10),
+                                          ],
+                                        ),
+                                        /*const SizedBox(height: 10),
+                                      ],
+                                    ),*/),
+                                ),
+                              );
+                            });
+                      }else{
+                        return const Center(child: Text("No Data found..",style: TextStyle(fontWeight: FontWeight.bold)));
+                      }
+                    }),
+              ),
+            ],
+          ),
         ),
       ),
     );

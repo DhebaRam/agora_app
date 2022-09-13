@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:agora_rtc_engine/rtc_engine.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
@@ -11,16 +10,19 @@ import '../../utils/app&tokan_id.dart';
 import 'home_screen.dart';
 
 class AudioCallScreen extends StatefulWidget {
-  // final String? channelName;
-  final ClientRole? role;
+  final ClientRole? clientRole;
   final String? name;
-  final String? call;
+  final String? callType;
+  final String? number;
+  final String? channelName;
 
   const AudioCallScreen({
     Key? key,
-    this.role,
+    this.clientRole,
     this.name,
-    this.call,
+    this.callType,
+    this.number,
+    this.channelName
   }) : super(key: key);
 
   @override
@@ -44,9 +46,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   @override
   void dispose() {
-    // clear users
     _users.clear();
-    // destroy sdk
     _engine.leaveChannel();
     _engine.destroy();
     super.dispose();
@@ -54,9 +54,8 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   @override
   void initState() {
-    print("1111111................ ${widget.name}");
     super.initState();
-    widget.call == "voice" ? null : _handleCameraAndMic(Permission.camera);
+    widget.callType == "voice" ? null : _handleCameraAndMic(Permission.camera);
     _handleCameraAndMic(Permission.microphone);
     initialize();
   }
@@ -81,15 +80,16 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     VideoEncoderConfiguration configuration = VideoEncoderConfiguration();
     configuration.dimensions = const VideoDimensions(width: 1920, height: 1080);
     await _engine.setVideoEncoderConfiguration(configuration);
-    await _engine.joinChannel(Token, "${widget.name}", null, 0);
+    await _engine.joinChannel(Token, widget.channelName.toString(), null, 0);
   }
 
   /// Create agora sdk instance and initialize
   Future<void> _initAgoraRtcEngine() async {
     _engine = await RtcEngine.create(APP_ID);
-    widget.call == "voice" ? null : await _engine.enableVideo();
+    widget.callType == "voice" ? null : await _engine.enableVideo();
     await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
     await _engine.setClientRole(ClientRole.Broadcaster);
+    widget.callType == "voice" ? _engine.setEnableSpeakerphone(false) : null;
   }
 
   /// Add agora event handlers
@@ -101,7 +101,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       });
     }, joinChannelSuccess: (channel, uid, elapsed) {
       setState(() {
-        final info = 'onJoinChannel: $channel, uid: $uid';
+        final info = 'onJoinChannel: "${widget.channelName}", uid: $uid';
         _infoStrings.add(info);
       });
     }, leaveChannel: (stats) {
@@ -131,7 +131,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   void callTimer() {
-    const oneSec = const Duration(seconds: 1);
+    const oneSec = Duration(seconds: 1);
     _timer = Timer.periodic(
       oneSec,
       (Timer timer) {
@@ -147,7 +147,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           _startSecond = 0;
           _startMinutes = 0;
           _startHour = 0;
-          setState(() {});
+          // setState(() {});
         }
       },
     );
@@ -197,7 +197,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       list.add(const RtcLocalView.SurfaceView());
     }
     _users.forEach((int uid) =>
-        list.add(RtcRemoteView.SurfaceView(channelId: "second", uid: uid)));
+        list.add(RtcRemoteView.SurfaceView(channelId: "${widget.channelName}", uid: uid)));
     return list;
   }
 
@@ -216,59 +216,44 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     );
   }
 
-  /// Video layout wrapper
-  /*Widget _viewRows() {
-    final views = _getRenderViews();
-    switch (views.length) {
-      case 1:
-        return Container(
-            child: Column(
-              children: <Widget>[_videoView(views[0])],
-            ));
-      case 2:
-        return Container(
-            child: Column(
-              children: <Widget>[
-                _expandedVideoRow([views[0]]),
-                _expandedVideoRow([views[1]])
-              ],
-            ));
-      case 3:
-        return Container(
-            child: Column(
-              children: <Widget>[
-                _expandedVideoRow(views.sublist(0, 2)),
-                _expandedVideoRow(views.sublist(2, 3))
-              ],
-            ));
-      case 4:
-        return Container(
-            child: Column(
-              children: <Widget>[
-                _expandedVideoRow(views.sublist(0, 2)),
-                _expandedVideoRow(views.sublist(2, 4))
-              ],
-            ));
-      default:
-    }
-    return Container();
-  }*/
-
   @override
   Widget build(BuildContext context) {
     double wid = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
-    Future.delayed(const Duration(minutes: 10), () {
+    // if (_users.length == 1) {
+    //   Future.delayed(const Duration(seconds: 1), () {
+    //     if (_users.isEmpty) {
+    //       _onReciverEnd(context);
+    //     }
+    //   });
+    // }
+    // Future.delayed(const Duration(seconds: 30), () {
       if (_users.length == 1) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (_users.isEmpty) {
+            _onReciverEnd(context);
+          }
+        });
       } else {
-        _onNotReciverEnd(context);
+        Future.delayed(const Duration(seconds: 30), () {
+          if (_users.isEmpty) {
+            _onNotReciverEnd(context);
+          }
+        });
       }
-      Future.delayed(const Duration(microseconds: 100), () {
-        if (_users.isEmpty) {
-          _onReciverEnd(context);
-        }
-      });
-    });
+      // Future.delayed(const Duration(microseconds: 100), () {
+      //   if (_users.isEmpty) {
+      //     _onReciverEnd(context);
+      //   }
+      // });
+    // });
+    // if (_users.length == 1) {
+    //   Future.delayed(const Duration(seconds: 1), () {
+    //     if (_users.isEmpty) {
+    //       _onReciverEnd(context);
+    //     }
+    //   });
+    // }
     return Scaffold(
         body: Center(
       child: Stack(
@@ -286,7 +271,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           Center(
             child: Stack(
               children: <Widget>[
-                widget.call == "voice" ? const Text("") : _viewRows(),
+                widget.callType == "voice" ? const Text("") : _viewRows(),
                 // widget.call == "voice" ? const Text("") : _panel(),
                 _toolbar(),
               ],
@@ -300,7 +285,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   Widget _toolbar() {
     bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-    if (widget.role == ClientRole.Broadcaster) {
+    if (widget.clientRole == ClientRole.Broadcaster) {
       return Container(
         alignment: Alignment.bottomCenter,
         // padding: const EdgeInsets.symmetric(vertical: 48),
@@ -309,15 +294,15 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             !isLandscape ? const SizedBox(height: 50) : Container(),
-            widget.call == "voice" ? const Icon(Icons.account_circle, size: 120) : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
+            widget.callType == "voice" ? const Icon(Icons.account_circle, size: 120) : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
             const SizedBox(height: 5),
-            widget.call == "voice" ? Text("${widget.name}",
+            widget.callType == "voice" ? Text("${widget.name}",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 20, color: Colors.white)) : _users.isEmpty ? Text("${widget.name}",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 20, color: Colors.white)) : Container(),
             const SizedBox(height: 2),
-            widget.call == "voice"
+            widget.callType == "voice"
                 ? _users.length == 1
                     ? Container(
                         child: callTimerStart(),
@@ -363,7 +348,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                   ],
                 ),
                 Column(children: [
-                  widget.call == "voice"
+                  widget.callType == "voice"
                       ? RawMaterialButton(
                           onPressed: _users.length == 1 ? _onCallHold : null,
                           child: Icon(
@@ -401,7 +386,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                               style: TextStyle(color: Colors.black45)),
                 ]),
                 Column(children: [
-                  widget.call == "voice"
+                  widget.callType == "voice"
                       ? RawMaterialButton(
                           onPressed: _onCallSpeaker,
                           child: Icon(
@@ -486,7 +471,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                 color: Colors.white,
                 size: 35.0,
               ),
-              shape: CircleBorder(),
+              shape: const CircleBorder(),
               elevation: 2.0,
               fillColor: Colors.redAccent,
               padding: const EdgeInsets.all(15.0),
@@ -522,8 +507,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
             itemCount: _infoStrings.length,
             itemBuilder: (BuildContext context, int index) {
               if (_infoStrings.isEmpty) {
-                return const Text(
-                    "null"); // return type can't be null, a widget was required
+                return const Text("null"); // return type can't be null, a widget was required
               }
               return Padding(
                 padding: const EdgeInsets.symmetric(
@@ -607,7 +591,13 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     setState(() {
       speaker = !speaker;
     });
-    _engine.isSpeakerphoneEnabled();
+    if(speaker){
+      // _engine.isSpeakerphoneEnabled();
+      _engine.setEnableSpeakerphone(true);
+    }else{
+      _engine.setEnableSpeakerphone(false);
+    }
+
   }
 
   void _onSwitchCamera() {
@@ -629,7 +619,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     setState(() {
       hold = !hold;
     });
-    _engine.disableAudio();
+    if(hold){
+      _engine.disableAudio();
+    }else{
+      _engine.enableAudio();
+    }
   }
 
   void _onCallEnd(BuildContext context) {
@@ -651,7 +645,10 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   void _onNotReciverEnd(BuildContext context) {
-    Navigator.pop(context);
-    // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>const HomeScreen()));
+    // Navigator.pop(context);
+    _users.clear();
+    _engine.leaveChannel();
+    _engine.destroy();
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>const HomeScreen()));
   }
 }
