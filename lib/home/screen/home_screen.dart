@@ -5,7 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../login/provider/login provider.dart';
+import '../../login/screen/login_screen.dart';
 import '../../notificationservice/model/local_notification_service.dart';
 import '../../notificationservice/screen/recive_call_screen.dart';
 import '../../utils/app&tokan_id.dart';
@@ -125,7 +127,17 @@ class _HomeScreenState extends State<HomeScreen> {
       onWillPop: () => willPop(),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(title: const Text("Contact"),backgroundColor: Colors.indigoAccent),
+        appBar: AppBar(title: Row(
+          children: [
+            const Expanded(child: Text("Contact")),
+            IconButton(onPressed: () async{
+              FirebaseAuth.instance.signOut();
+              final prefs = await SharedPreferences.getInstance();
+              prefs.clear();
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+            }, icon: const Icon(Icons.power_settings_new,color: AppColor.white,))
+          ],
+        ),backgroundColor: Colors.indigoAccent),
         body: Container(
           height: height,
           decoration: const BoxDecoration(
@@ -142,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     currentUser.clear();
                     listContactList.clear();
-                    Stream<QuerySnapshot<Map<String, dynamic>>> userData = firestore.collection('use_details').where("group",isEqualTo: "false").snapshots();
+                    Stream<QuerySnapshot<Map<String, dynamic>>> userData = firestore.collection('use_details').where("group",isEqualTo: false).snapshots();
                     Stream<QuerySnapshot<Map<String, dynamic>>> currentUserData = firestore.collection('use_details').where("auth_id", isEqualTo: auth.currentUser!.uid).snapshots();
                     userData.map((event) => event.docs.map((e) => listContactList.add(e.data())).toList()).toList();
                     currentUserData.map((event) => event.docs.map((e) => currentUser.add(e.data())).toList()).toList();
@@ -186,6 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               Timestamp timestampTime = snapshot.data!.docs[index].get("timestamp");
                               DateTime date = timestampTime.toDate();
                               String datetime =  date.day.toString() +"/"+ date.month.toString() +"/"+ date.year.toString();
+                              // if(auth.currentUser!.phoneNumber == snapshot.data!.docs[index].get("phone_No").map((e)=>e["phone_No"])){
+                              //   snapshot.data!.docs[index].get("phone_No").map((e)=>print(e["phone_No"]));
+                              // if(snapshot.data!.docs[index].get("group")) {
+                              //   debugPrint(snapshot.data!.docs[index].get("phone_No").map((e)=>e).toList());
+                              // }
+                              // }
                               return Padding(
                                 padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
                                 child: GestureDetector(
@@ -204,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     decoration: BoxDecoration(
                                                         color: AppColor.blue,
                                                         borderRadius: BorderRadius.circular(100)),
-                                                    child: snapshot.data!.docs[index].get("group") == "true" ? Icon(Icons.group, color: AppColor.white, size: 30) : Icon(Icons.person, color: AppColor.white, size: 30))
+                                                    child: snapshot.data!.docs[index].get("group") == true ? Icon(Icons.group, color: AppColor.white, size: 30) : Icon(Icons.person, color: AppColor.white, size: 30))
                                             ),
                                             Expanded(
                                               child: Padding(
@@ -219,21 +237,48 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ),
                                               ),
                                             ),
+                                            snapshot.data!.docs[index].get("group") != true ?
                                             IconButton(icon: const Icon(Icons.phone_outlined,color: Colors.black,size: 30), onPressed: () async{
                                               CollectionReference  collection = firestore.collection('use_details');
                                               QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
                                               dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
-                                              loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "voice", number: snapshot.data!.docs[index].get("phone_No"),channelName: channel)));
+
+                                              DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                              x.reference.snapshots().map((e){
+
+                                                for(int i=0;i<e.get("phone_No").length;i++){
+                                                  if(e.get("auth_id")[i]!=auth.currentUser!.uid){
+                                                    print("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                    print("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                    loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No")[i],name.join(),"voice");
+                                                  }
+                                                  // print("22211 ${e.get("phone_No")[i]}");
+                                                }
+                                              }).toList();
+                                              // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "voice", number: snapshot.data!.docs[index].get("phone_No").first,channelName: channel)));
                                               // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
-                                            }),
+                                            }) : const SizedBox.shrink(),
                                             const SizedBox(width: 15),
                                             IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () async{
                                               CollectionReference  collection = firestore.collection('use_details');
                                               QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
                                               dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
-                                              loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "video", number: snapshot.data!.docs[index].get("phone_No"),channelName: channel)));
+
+                                              DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                              x.reference.snapshots().map((e){
+
+                                                for(int i=0;i<e.get("phone_No").length;i++){
+                                                  if(e.get("auth_id")[i]!=auth.currentUser!.uid){
+                                                    print("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                    print("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                    loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No")[i],name.join(),"video");
+                                                  }
+                                                  // print("22211 ${e.get("phone_No")[i]}");
+                                                }
+                                              }).toList();
+                                              // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "video", number: snapshot.data!.docs[index].get("phone_No").first,channelName: channel)));
                                             }),
                                             const SizedBox(width: 10),
                                           ],

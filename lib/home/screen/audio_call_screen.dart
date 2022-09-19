@@ -107,13 +107,16 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     }, leaveChannel: (stats) {
       setState(() {
         _infoStrings.add('onLeaveChannel');
-        _users.clear();
+        if(_users.length>=1){
+          _users.clear();
+        }
       });
     }, userJoined: (uid, elapsed) {
       setState(() {
         final info = 'userJoined: $uid';
         _infoStrings.add(info);
         _users.add(uid);
+        print("info user ${_infoStrings}");
         callTimer();
       });
     }, userOffline: (uid, elapsed) {
@@ -135,7 +138,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     _timer = Timer.periodic(
       oneSec,
       (Timer timer) {
-        if (_users.length == 1) {
+        if (_users.length >= 1) {
           if (_startSecond == 59) {
             _startSecond = 0;
             setState(() {});
@@ -228,15 +231,16 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     //   });
     // }
     // Future.delayed(const Duration(seconds: 30), () {
-      if (_users.length == 1) {
+      if (_users.length >= 1) {
         Future.delayed(const Duration(seconds: 1), () {
           if (_users.isEmpty) {
             _onReciverEnd(context);
           }
         });
       } else {
+        print("user else ${_users.length}");
         Future.delayed(const Duration(seconds: 30), () {
-          if (_users.isEmpty) {
+          if (_users.isEmpty && _infoStrings.isEmpty) {
             _onNotReciverEnd(context);
           }
         });
@@ -303,7 +307,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                 style: const TextStyle(fontSize: 20, color: Colors.white)) : Container(),
             const SizedBox(height: 2),
             widget.callType == "voice"
-                ? _users.length == 1
+                ? _users.length >= 1
                     ? Container(
                         child: callTimerStart(),
                       )
@@ -319,10 +323,10 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                 Column(
                   children: [
                     RawMaterialButton(
-                      onPressed: _users.length == 1 ? _onToggleMute : null,
+                      onPressed: _users.length >= 1 ? _onToggleMute : null,
                       child: Icon(
                         muted ? Icons.mic_off : Icons.mic,
-                        color: _users.length == 1 ? muted
+                        color: _users.length >= 1 ? muted
                                 ? Colors.white
                                 : Colors.blueAccent
                             : Colors.black12,
@@ -330,7 +334,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                       ),
                       shape: const CircleBorder(),
                       elevation: 2.0,
-                      fillColor: _users.length == 1 ? muted
+                      fillColor: _users.length >= 1 ? muted
                               ? Colors.blueAccent
                               : Colors.white
                           : Colors.white,
@@ -350,15 +354,15 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                 Column(children: [
                   widget.callType == "voice"
                       ? RawMaterialButton(
-                          onPressed: _users.length == 1 ? _onCallHold : null,
+                          onPressed: _users.length >= 1 ? _onCallHold : null,
                           child: Icon(
                             hold ? Icons.pause : Icons.pause,
-                            color: _users.length == 1 ? hold ? Colors.white : Colors.blueAccent : Colors.black12,
+                            color: _users.length >= 1 ? hold ? Colors.white : Colors.blueAccent : Colors.black12,
                             size: 20.0,
                           ),
                           shape: const CircleBorder(),
                           elevation: 2.0,
-                          fillColor: _users.length == 1 ? hold ? Colors.blueAccent : Colors.white : Colors.white,
+                          fillColor: _users.length >= 1 ? hold ? Colors.blueAccent : Colors.white : Colors.white,
                           padding: const EdgeInsets.all(12.0),
                         )
                       : RawMaterialButton(

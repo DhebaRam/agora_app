@@ -33,6 +33,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    android{
+        aaptOptions.cruncherEnabled = false
+        aaptOptions.useNewCruncher = false
+    }
 
     kotlinOptions {
         jvmTarget = '1.8'

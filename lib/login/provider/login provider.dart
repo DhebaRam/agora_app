@@ -17,7 +17,7 @@ class LoginProvider extends ChangeNotifier {
   String currentUserId = "";
   bool isLoading = false;
   String userName = "";
-  String deviceTokenToSendPushNotification = "";
+  List deviceTokenToSendPushNotification = [];
 
   userPhoneLogin(BuildContext context,phoneNo) async{
     isLoading = true;
@@ -71,7 +71,7 @@ class LoginProvider extends ChangeNotifier {
       debugPrint("You are logged in successfully");
       setValue();
       isLoading = false;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const HomeScreen()), (Route<dynamic> route) => false);
     }).catchError((error) {
       isLoading = false;
       notifyListeners();
@@ -86,15 +86,18 @@ class LoginProvider extends ChangeNotifier {
   userDetailsData()async{
     final FirebaseMessaging _fcm = FirebaseMessaging.instance;
     final token = await _fcm.getToken();
-    deviceTokenToSendPushNotification = token.toString();
+    print("Token Value2 $token");
+    deviceTokenToSendPushNotification.add(token);
     print("Token Value2 $deviceTokenToSendPushNotification");
     final prefs = await SharedPreferences.getInstance();
-    String? number = prefs.getString("number");
-    Map<String, dynamic> userDetails = {"auth_id": currentUserId, "phone_No": number, 'user_name': userName, 'deviceNotificationToken':deviceTokenToSendPushNotification, 'timestamp': DateTime.now(),"bool":false, "group":false};
-    await firestore.collection("use_details").doc(number).set(userDetails);
+    List phoneNo=[];// = prefs.getString("number");
+    phoneNo.add(prefs.getString("number"));
+    print("phone No $phoneNo");
+    Map<String, dynamic> userDetails = {"auth_id": currentUserId, "phone_No": phoneNo, 'user_name': userName, 'deviceNotificationToken':deviceTokenToSendPushNotification, 'timestamp': DateTime.now(),"bool":false, "group":false};
+    await firestore.collection("use_details").doc(phoneNo.join()).set(userDetails);
   }
   createGroupDetails(List number, Map<String, dynamic> userDetails,BuildContext context) async{
-    await firestore.collection("use_details").doc(number.join().toString()).set(userDetails).then((value) => Navigator.pop(context));
+    await firestore.collection("use_details").doc().set(userDetails).then((value) => Navigator.pop(context)); //number.join().toString()
   }
   void setValue() async{
     final prefs = await SharedPreferences.getInstance();
@@ -102,7 +105,10 @@ class LoginProvider extends ChangeNotifier {
   }
 
   audioCallNotification(notificationToken, userName, phoneNumber, currentName, callType) async{
-    debugPrint("Method called");
+    debugPrint("Method called $notificationToken");
+    debugPrint("Method called $userName");
+    debugPrint("Method called $phoneNumber");
+    debugPrint("Method called $currentName");
     final msg = jsonEncode({
       "registration_ids": <String>[
         "$notificationToken"

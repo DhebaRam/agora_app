@@ -34,9 +34,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   @override
   void initState(){
     super.initState();
-    debugPrint("12121 ${widget.contact.toString()}");
-    debugPrint("34434 ${widget.currentUser.toString()}");
-
+    // debugPrint("12121 ${widget.contact.toString()}");
+    // debugPrint("34434 ${widget.currentUser.toString()}");
   }
   @override
   Widget build(BuildContext context) {
@@ -200,7 +199,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Text("${widget.contact[index]["user_name"]}",style: const TextStyle(fontWeight: FontWeight.bold,color: AppColor.blue,fontSize: 18),),
-                                              Text("${widget.contact[index]["phone_No"]}",style: const TextStyle(color: AppColor.blue),),
+                                              Text("${widget.contact[index]["phone_No"].join()}",style: const TextStyle(color: AppColor.blue),),
                                             ],
                                           ),
                                         ),
@@ -256,24 +255,31 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         ),
                         TextButton(
                             onPressed: () {
-
+                              print("method call ${widget.currentUser}");
                               if(selectList.isNotEmpty){
-                                print("length ${selectList.first}");
-                                selectList.add(widget.currentUser.join());
-                                print("length1 ${selectList}");
-                                print("length ${selectList.length}");
+                                selectList.addAll(widget.currentUser);
+                                debugPrint("length ${selectList.length}");
                                 selectList.map((e) {
                                   authId.add(e["auth_id"]);
-                                  phoneNo!.add(e["phone_No"]);
-                                  deviceNotificationToken.add(e["deviceNotificationToken"]);
+                                  phoneNo!.add(e["phone_No"].join());
+                                  deviceNotificationToken.add(e["deviceNotificationToken"].join());
                                 }).toList();
-                                print("length ${selectList[0]["user_name"]}");
+                                debugPrint("length ${selectList[0]["user_name"]}");
                                 final loginProvider = getIt<LoginProvider>();
                                 Map<String, dynamic> userDetails = {"auth_id": authId, "phone_No":phoneNo, 'user_name': groupName.text, 'deviceNotificationToken': deviceNotificationToken, 'timestamp': DateTime.now(),"bool":false,"group":true};
-                                print("User Details $userDetails");
+                                debugPrint("User Details ${userDetails}");
                                 loginProvider.createGroupDetails(phoneNo!,userDetails,context);
                                 // Navigator.pop(context);
                                 selectList.clear();
+                                setState(() {});
+                                widget.contact.map((e) {
+                                  int indexValue = widget.contact.indexOf(e);
+                                  if(e["bool"]==true){
+                                    setState(() {
+                                      widget.contact[indexValue]["bool"]=false;
+                                    });
+                                  }
+                                }).toList();
                               }
 
 

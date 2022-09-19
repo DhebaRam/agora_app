@@ -8,7 +8,6 @@ import 'login/provider/login provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'notificationservice/model/local_notification_service.dart';
-import 'notificationservice/screen/recive_call_screen.dart';
 
 Future<void> backgroundHandler(RemoteMessage message) async {
   print(message.data.toString());
