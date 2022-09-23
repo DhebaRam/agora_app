@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../home/screen/audio_call_screen.dart';
 import '../../home/screen/home_screen.dart';
-import '../../utils/app&tokan_id.dart';
+import '../../utils/app&token_id.dart';
 
 class RecivedScreen extends StatefulWidget {
   final String? channel;
@@ -12,15 +12,14 @@ class RecivedScreen extends StatefulWidget {
   final ClientRole? clientRole;
   final String? name;
 
-  RecivedScreen({Key? key,this.channel, this.type,this.clientRole, this.name}) : super(key: key);
+  const RecivedScreen({Key? key,this.channel, this.type,this.clientRole, this.name}) : super(key: key);
 
   @override
-  State<RecivedScreen> createState() => _RecivedScreenState();
+  State<RecivedScreen> createState() => RecivedScreenState();
 }
 
-class _RecivedScreenState extends State<RecivedScreen> {
+class RecivedScreenState extends State<RecivedScreen> {
   void _onNotReciverEnd(BuildContext context) {
-    // Navigator.pop(context);
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>const HomeScreen()));
   }
   Future<void> initClearNotificationsState() async {
@@ -117,6 +116,6 @@ class _RecivedScreenState extends State<RecivedScreen> {
   void _onCallRecived(BuildContext context) {
     // Navigator.pop(context);
     Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: widget.name ,callType: widget.type, number: widget.channel,channelName: channel,)));
+        MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: widget.clientRole,name: widget.name ,callType: widget.type, number: widget.channel,channelName: channel,)));
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:agora_app/utils/app_images.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -62,8 +63,6 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Stack(
                 children: [
                   image(),
-                  /*SvgPicture.asset("assets/images/wave8.svg", fit: BoxFit.fill,
-                    height: height / 2),*/
                   const Positioned(
                     top: 100,
                     left: 45,
@@ -84,12 +83,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   SvgPicture image() {
     Future.delayed(const Duration(seconds: 2), () {
-      // Do something
-
     });
 
-    return SvgPicture.asset("assets/images/wave8.svg", fit: BoxFit.fill);
-
+    return SvgPicture.asset(AppImage.wave/*"assets/images/wave8.svg"*/, fit: BoxFit.fill);
 
   }
 }

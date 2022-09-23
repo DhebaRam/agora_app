@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>177169818245-34g3k4822elpi2m65cf0ht3meiatcbt7.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.177169818245-34g3k4822elpi2m65cf0ht3meiatcbt7</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>177169818245-3lbeu8pj6p4mkef8863cj4ivnvb9eecq.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC_QIWx74v6i0_50dNDb2oXp_Hp8fLCZko</string>
+	<key>GCM_SENDER_ID</key>
+	<string>177169818245</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.agoraApp</string>
+	<key>PROJECT_ID</key>
+	<string>agoraapp-b0ae3</string>
+	<key>STORAGE_BUCKET</key>
+	<string>agoraapp-b0ae3.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:177169818245:ios:2fad2191bf17a20717ffec</string>
+</dict>
+</plist>

@@ -5,12 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../login/provider/login provider.dart';
 import '../../login/screen/login_screen.dart';
 import '../../notificationservice/model/local_notification_service.dart';
 import '../../notificationservice/screen/recive_call_screen.dart';
-import '../../utils/app&tokan_id.dart';
+import '../../utils/app&token_id.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/get_it.dart';
 import 'audio_call_screen.dart';
@@ -29,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseAuth auth = FirebaseAuth.instance;
   final loginProvider = getIt<LoginProvider>();
+  bool checkGroupUser = false;
   // final user = auth.currentUser;
   // currentUserId = user!.uid;
 
@@ -52,15 +55,14 @@ class _HomeScreenState extends State<HomeScreen> {
     FirebaseMessaging.instance.getInitialMessage().then(
           (message) {
             debugPrint("FirebaseMessaging .instance.getInitialMessage");
-
-            // LocalNotificationService.createanddisplaynotification(message!);
-            if (message!.notification != null) {
+            LocalNotificationService.createanddisplaynotification(message!);
+            if (message.notification != null) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => RecivedScreen(
                     channel: message.notification!.body,
                     type: message.data.values.last,
-                    clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+                    clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
                     name: message.data.values.first,
                   ),
                 ),
@@ -72,8 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // 2. This method only call when App in forground it mean app must be opened
     FirebaseMessaging.onMessage.listen(
           (message) {
-        print("FirebaseMessaging .onMessage.listen1111");
-        // LocalNotificationService.createanddisplaynotification(message);
+        debugPrint("FirebaseMessaging .onMessage.listen1111");
+        LocalNotificationService.createanddisplaynotification(message);
         if (message.notification != null) {
           debugPrint("username....... ${message.data.values.elementAt(0)}");
           debugPrint("username....... ${message.data.values}");
@@ -81,16 +83,16 @@ class _HomeScreenState extends State<HomeScreen> {
           debugPrint("username....... ${message.data.values.last}");
           debugPrint("username....... ${message.data.values.elementAt(1)}");
 
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => RecivedScreen(
-                channel: message.notification!.body,
-                type: message.data.values.last,
-                clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
-                name: message.data.values.first,
-              ),
-            ),
-          );
+          // Navigator.of(context).pushReplacement(
+          //   MaterialPageRoute(
+          //     builder: (context) => RecivedScreen(
+          //       channel: message.notification!.body,
+          //       type: message.data.values.last,
+          //       clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
+          //       name: message.data.values.first,
+          //     ),
+          //   ),
+          // );
 
         }
       },
@@ -99,14 +101,14 @@ class _HomeScreenState extends State<HomeScreen> {
     // 3. This method only call when App in background and not terminated(not closed)
     FirebaseMessaging.onMessageOpenedApp.listen(
           (message) {
-        print("FirebaseMessaging .onMessageOpenedApp.listen");
+        debugPrint("FirebaseMessaging .onMessageOpenedApp.listen");
         if (message.notification != null) {
           LocalNotificationService.createanddisplaynotification(message);
           Navigator.of(context).pushReplacement(MaterialPageRoute(
               builder: (context) => RecivedScreen(
                 channel: message.notification!.body,
                 type: message.data.values.last,
-                clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
+                clientRole:message.data.values.last=="Audience"? ClientRole.Audience : ClientRole.Broadcaster,
                 name: message.data.values.first,
               ),
             ),
@@ -114,8 +116,13 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
     );
+    _handleCameraAndMic(Permission.camera);
+    _handleCameraAndMic(Permission.microphone);
     // TODO: implement initState
     super.initState();
+  }
+  Future<void> _handleCameraAndMic(Permission permission) async {
+    await permission.request();
   }
   @override
   Widget build(BuildContext context) {
@@ -199,95 +206,277 @@ class _HomeScreenState extends State<HomeScreen> {
                               DateTime date = timestampTime.toDate();
                               String datetime =  date.day.toString() +"/"+ date.month.toString() +"/"+ date.year.toString();
                               // if(auth.currentUser!.phoneNumber == snapshot.data!.docs[index].get("phone_No").map((e)=>e["phone_No"])){
-                              //   snapshot.data!.docs[index].get("phone_No").map((e)=>print(e["phone_No"]));
+                              //   snapshot.data!.docs[index].get("phone_No").map((e)=>debugPrint(e["phone_No"]));
                               // if(snapshot.data!.docs[index].get("group")) {
                               //   debugPrint(snapshot.data!.docs[index].get("phone_No").map((e)=>e).toList());
                               // }
                               // }
-                              return Padding(
-                                padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
-                                child: GestureDetector(
-                                  child: Card(
-                                    child: /*Column(
+                              Provider.of<LoginProvider>(context,listen: false).checkGroupMobileNumber(snapshot.data!.docs[index].get("phone_No"));
+                              if(snapshot.data!.docs[index].get("group") == true && Provider.of<LoginProvider>(context,listen: false).groupNumber){
+                                // debugPrint("1111... ${snapshot.data!.docs[index].get("group") == true && Provider.of<LoginProvider>(context,listen: false).groupNumber}");
+                                // debugPrint("1111...11 ${Provider.of<LoginProvider>(context,listen: false).groupNumber}");
+                                // Provider.of<LoginProvider>(context,listen: false).checkGroupMobileNumber(snapshot.data!.docs[index].get("phone_No"));
+                                // DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                // for(var i in snapshot.data!.docs[index].get("phone_No")) {
+                                //   if(i == auth.currentUser!.phoneNumber){
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 18.0, right: 18.0, top: 5),
+                                      child: GestureDetector(
+                                        child: Card(
+                                          child: /*Column(
                                       children: [
                                         const SizedBox(height: 2),*/
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Padding(
-                                                padding: isLandscape ? const EdgeInsets.only(left: 70) : const EdgeInsets.only(left: 15),
-                                                child: Container(
-                                                    alignment: Alignment.center,
-                                                    padding: const EdgeInsets.all(5),
-                                                    decoration: BoxDecoration(
-                                                        color: AppColor.blue,
-                                                        borderRadius: BorderRadius.circular(100)),
-                                                    child: snapshot.data!.docs[index].get("group") == true ? Icon(Icons.group, color: AppColor.white, size: 30) : Icon(Icons.person, color: AppColor.white, size: 30))
-                                            ),
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 15),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text("${snapshot.data!.docs[index].get("user_name")}",style: const TextStyle(fontWeight: FontWeight.bold,color: AppColor.blue),),
-                                                    Text(datetime.toString(),style: const TextStyle(color: AppColor.blue),),
-                                                  ],
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .center,
+                                            children: [
+                                              Padding(
+                                                  padding: isLandscape
+                                                      ? const EdgeInsets.only(
+                                                      left: 70)
+                                                      : const EdgeInsets.only(
+                                                      left: 15),
+                                                  child: Container(
+                                                      alignment: Alignment.center,
+                                                      padding: const EdgeInsets.all(
+                                                          5),
+                                                      decoration: BoxDecoration(
+                                                          color: AppColor.blue,
+                                                          borderRadius: BorderRadius
+                                                              .circular(100)),
+                                                      child: snapshot.data!
+                                                          .docs[index].get(
+                                                          "group") == true ? const Icon(
+                                                          Icons.group,
+                                                          color: AppColor.white,
+                                                          size: 30) : const Icon(
+                                                          Icons.person,
+                                                          color: AppColor.white,
+                                                          size: 30))
+                                              ),
+                                              Expanded(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(
+                                                      left: 15),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text("${snapshot.data!.docs[index].get("user_name")}",
+                                                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColor.blue),),
+                                                      Text(datetime.toString(), style: const TextStyle(color: AppColor.blue),),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
+                                              snapshot.data!.docs[index].get("group") != true ?
+                                              IconButton(icon: const Icon(
+                                                  Icons.phone_outlined,
+                                                  color: Colors.black, size: 30),
+                                                  onPressed: () async {
+                                                    CollectionReference collection = firestore.collection('use_details');
+                                                    QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+                                                    dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+
+                                                    DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                                    x.reference.snapshots().map((e) {
+                                                      for (int i = 0; i < e.get("phone_No").length; i++) {
+                                                        if (e.get("auth_id")[i] != auth.currentUser!.uid) {
+                                                          debugPrint("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                          debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                          loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],
+                                                              snapshot.data!.docs[index].get("user_name"),
+                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice");
+                                                        }
+                                                        // debugPrint("22211 ${e.get("phone_No")[i]}");
+                                                      }
+                                                    }).toList();
+                                                    // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
+                                                    Navigator.pushReplacement(context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                AudioCallScreen(
+                                                                    clientRole: ClientRole.Broadcaster,
+                                                                    name: snapshot.data!.docs[index].get("user_name"),
+                                                                    callType: "voice",
+                                                                    number: snapshot.data!.docs[index].get("phone_No").first, channelName: channel)));
+                                                    // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
+                                                  }) : const SizedBox.shrink(),
+                                              const SizedBox(width: 15),
+                                              IconButton(icon: const Icon(
+                                                  Icons.video_call_outlined,
+                                                  color: Colors.black, size: 30),
+                                                  onPressed: () async {
+                                                    CollectionReference collection = firestore.collection('use_details');
+                                                    QuerySnapshot querySnapshots = await collection.where("auth_id",
+                                                        isEqualTo: auth.currentUser!.uid).get();
+                                                    dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+
+                                                    DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                                    x.reference.snapshots().map((e) {
+                                                      for (int i = 0; i < e.get("phone_No").length; i++) {
+                                                        if (e.get("auth_id")[i] != auth.currentUser!.uid) {
+                                                          debugPrint("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                          debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                          loginProvider.audioCallNotification(
+                                                              snapshot.data!.docs[index].get("deviceNotificationToken")[i],
+                                                              snapshot.data!.docs[index].get("user_name"),
+                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video");
+                                                        }
+                                                      }
+                                                    }).toList();
+                                                    // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
+                                                    Navigator.pushReplacement(context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                AudioCallScreen(
+                                                                    clientRole: ClientRole.Broadcaster,
+                                                                    name: snapshot.data!.docs[index].get("user_name"),
+                                                                    callType: "video",
+                                                                    number: snapshot.data!.docs[index].get("phone_No").first,
+                                                                    channelName: channel)));
+                                                  }),
+                                              const SizedBox(width: 10),
+                                            ],
+                                          ),
+                                      ),
+                                      ),
+                                    );
+                              }else if(snapshot.data!.docs[index].get("group") == false){
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 18.0, right: 18.0, top: 5),
+                                  child: GestureDetector(
+                                    child: Card(
+                                      child: /*Column(
+                                      children: [
+                                        const SizedBox(height: 2),*/
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment
+                                            .center,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: (){
+                                              Navigator.pushReplacement(context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) => //LiveScreen(channelName: channel,)));
+                                                      const AudioCallScreen(
+                                                          clientRole: ClientRole.Audience,
+                                                          name: "",
+                                                          callType: "Audience", //"Audience",
+                                                          number: "",
+                                                          channelName: channel)));
+                                            },
+                                            child: Padding(
+                                                padding: isLandscape
+                                                    ? const EdgeInsets.only(
+                                                    left: 70)
+                                                    : const EdgeInsets.only(
+                                                    left: 15),
+                                                child: Container(
+                                                    alignment: Alignment.center,
+                                                    padding: const EdgeInsets.all(
+                                                        5),
+                                                    decoration: BoxDecoration(
+                                                        color: AppColor.blue, borderRadius: BorderRadius
+                                                        .circular(100)),
+                                                    child: snapshot.data!.docs[index].get("group") == true ? const Icon(
+                                                        Icons.group, color: AppColor.white, size: 30) : const Icon(Icons.person,
+                                                        color: AppColor.white, size: 30))
                                             ),
-                                            snapshot.data!.docs[index].get("group") != true ?
-                                            IconButton(icon: const Icon(Icons.phone_outlined,color: Colors.black,size: 30), onPressed: () async{
-                                              CollectionReference  collection = firestore.collection('use_details');
-                                              QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
-                                              dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+                                          ),
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(left: 15),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text("${snapshot.data!.docs[index].get("user_name")}",
+                                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColor.blue),),
+                                                  Text(datetime.toString(),
+                                                    style: const TextStyle(color: AppColor.blue),),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          snapshot.data!.docs[index].get("group") != true ?
+                                          IconButton(icon: const Icon(
+                                              Icons.phone_outlined,
+                                              color: Colors.black, size: 30),
+                                              onPressed: () async {
+                                                CollectionReference collection = firestore.collection('use_details');
+                                                QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+                                                dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
 
-                                              DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
-                                              x.reference.snapshots().map((e){
-
-                                                for(int i=0;i<e.get("phone_No").length;i++){
-                                                  if(e.get("auth_id")[i]!=auth.currentUser!.uid){
-                                                    print("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
-                                                    print("deviceNotificationToken ${auth.currentUser!.uid}");
-                                                    loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No")[i],name.join(),"voice");
+                                                DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                                x.reference.snapshots().map((e) {
+                                                  for (int i = 0; i < e.get("phone_No").length; i++) {
+                                                    if (e.get("auth_id")[i] != auth.currentUser!.uid) {
+                                                      debugPrint("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                      debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                      loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],
+                                                          snapshot.data!.docs[index].get("user_name"),
+                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice");
+                                                    }
+                                                    // debugPrint("22211 ${e.get("phone_No")[i]}");
                                                   }
-                                                  // print("22211 ${e.get("phone_No")[i]}");
-                                                }
-                                              }).toList();
-                                              // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "voice", number: snapshot.data!.docs[index].get("phone_No").first,channelName: channel)));
-                                              // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
-                                            }) : const SizedBox.shrink(),
-                                            const SizedBox(width: 15),
-                                            IconButton(icon: const Icon(Icons.video_call_outlined,color: Colors.black,size: 30), onPressed: () async{
-                                              CollectionReference  collection = firestore.collection('use_details');
-                                              QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
-                                              dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+                                                }).toList();
+                                                // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
+                                                Navigator.pushReplacement(context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            AudioCallScreen(clientRole: ClientRole.Broadcaster, name: snapshot.data!.docs[index].get("user_name"),
+                                                                callType: "voice",
+                                                                number: snapshot.data!.docs[index].get("phone_No").first, channelName: channel)));
+                                                // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
+                                              }) : const SizedBox.shrink(),
+                                          const SizedBox(width: 15),
+                                          IconButton(icon: const Icon(
+                                              Icons.video_call_outlined,
+                                              color: Colors.black, size: 30),
+                                              onPressed: () async {
+                                                CollectionReference collection = firestore.collection('use_details');
+                                                QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+                                                dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
 
-                                              DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
-                                              x.reference.snapshots().map((e){
-
-                                                for(int i=0;i<e.get("phone_No").length;i++){
-                                                  if(e.get("auth_id")[i]!=auth.currentUser!.uid){
-                                                    print("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
-                                                    print("deviceNotificationToken ${auth.currentUser!.uid}");
-                                                    loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No")[i],name.join(),"video");
+                                                DocumentSnapshot x = snapshot.data!.docChanges[index].doc;
+                                                x.reference.snapshots().map((e) {
+                                                  for (int i = 0; i < e.get("phone_No").length; i++) {
+                                                    if (e.get("auth_id")[i] != auth.currentUser!.uid) {
+                                                      debugPrint("deviceNotificationToken ${e.get("deviceNotificationToken")[i]}");
+                                                      debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
+                                                      loginProvider.audioCallNotification(
+                                                          snapshot.data!.docs[index].get("deviceNotificationToken")[i],
+                                                          snapshot.data!.docs[index].get("user_name"),
+                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video");
+                                                    }
+                                                    // debugPrint("22211 ${e.get("phone_No")[i]}");
                                                   }
-                                                  // print("22211 ${e.get("phone_No")[i]}");
-                                                }
-                                              }).toList();
-                                              // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: ClientRole.Broadcaster,name: snapshot.data!.docs[index].get("user_name"),callType: "video", number: snapshot.data!.docs[index].get("phone_No").first,channelName: channel)));
-                                            }),
-                                            const SizedBox(width: 10),
-                                          ],
-                                        ),
-                                        /*const SizedBox(height: 10),
+                                                }).toList();
+                                                // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
+                                                Navigator.pushReplacement(context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            AudioCallScreen(
+                                                                clientRole: ClientRole.Broadcaster,
+                                                                name: snapshot.data!.docs[index].get("user_name"),
+                                                                callType: "video",
+                                                                number: snapshot.data!.docs[index].get("phone_No").first, channelName: channel)));
+                                              }),
+                                          const SizedBox(width: 10),
+                                        ],
+                                      ),
+                                      /*const SizedBox(height: 10),
                                       ],
                                     ),*/),
-                                ),
-                              );
+                                  ),
+                                );
+                              }
+                              else{
+                                return const SizedBox.shrink();
+                              }
                             });
                       }else{
                         return const Center(child: Text("No Data found..",style: TextStyle(fontWeight: FontWeight.bold)));
@@ -297,6 +486,38 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'uniqueTag',
+            backgroundColor: Colors.indigoAccent,
+            label: Row(
+              children: const [Text('Live  ',style: TextStyle(fontSize: 24)),Icon(Icons.live_tv,size: 35)],
+            ), onPressed: () async{
+
+            CollectionReference collection = firestore.collection('use_details');
+            QuerySnapshot querySnapshots = await collection.where("auth_id", isEqualTo: auth.currentUser!.uid).get();
+            QuerySnapshot querySnapshots1 = await collection.where("auth_id", isNotEqualTo: auth.currentUser!.uid).get();
+            dynamic name = querySnapshots.docs.map((e) => e.get("user_name")).toList();
+
+            querySnapshots1.docs.map((e) {
+                if (e.get("auth_id") != auth.currentUser!.uid && e.get("group") == false) {
+                  debugPrint("Notification ${e.get("user_name")}");
+                  loginProvider.audioCallNotification(e.get("deviceNotificationToken").join(),
+                      e.get("user_name"),
+                      e.get("phone_No").join(), name.join(), "Audience");
+                }
+            }).toList();
+
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(
+                    builder: (context) => //LiveScreen(channelName: channel,)));
+                        const AudioCallScreen(
+                            clientRole: ClientRole.Broadcaster,
+                            name: "",
+                            callType: "Audience", //"Audience",
+                            number: "",
+                            channelName: channel)));
+          },
+          ),
       ),
     );
   }

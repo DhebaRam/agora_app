@@ -1,3 +1,4 @@
+import 'package:agora_app/utils/app_images.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -28,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
         decoration: const BoxDecoration(
           color: Color(0xfff96d34),
           image: DecorationImage(
-            image: AssetImage("assets/images/backimage.jpeg"),
+            image: AssetImage(AppImage.backImage),//"assets/images/backimage.jpeg"),
             fit: BoxFit.cover,
           ),
         ),
@@ -36,8 +37,8 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             Stack(
               children: [
-                SvgPicture.asset(
-                  "assets/images/wave8.svg",
+                SvgPicture.asset(AppImage.wave,
+                  // "assets/images/wave8.svg",
                   fit: BoxFit.fill,
                   height: height/2,
                 ),
@@ -195,6 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 );
                               }),
+                              const SizedBox(height: 10),
                             ],
                           )),
                     ),

@@ -17,6 +17,7 @@ class LoginProvider extends ChangeNotifier {
   String currentUserId = "";
   bool isLoading = false;
   String userName = "";
+  bool groupNumber = false;
   List deviceTokenToSendPushNotification = [];
 
   userPhoneLogin(BuildContext context,phoneNo) async{
@@ -145,6 +146,25 @@ class LoginProvider extends ChangeNotifier {
       debugPrint("Debug print Catch $e");
     }
 
+  }
+
+  checkGroupMobileNumber(param0){
+    if(groupNumber){
+      groupNumber = false;
+      notifyListeners();
+    }
+
+    for(var i in param0) {
+      if (i == auth.currentUser!.phoneNumber) {
+        if(groupNumber==false){
+          groupNumber = true;
+          notifyListeners();
+        }
+        // groupNumber = true;
+        // notifyListeners();
+      }
+    }
+    // notifyListeners();
   }
   // Future<void> getDeviceTokenToSendNotification() async {
   //   final FirebaseMessaging _fcm = FirebaseMessaging.instance;

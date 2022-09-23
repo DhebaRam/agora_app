@@ -124,7 +124,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             child: ListView.builder(
                         itemCount: widget.contact.length,
                         itemBuilder: (context,index) {
-                          if(widget.currentUser.first.toString() == widget.contact[index].toString()){
+                          if(widget.currentUser.join().toString() == widget.contact[index].toString()){
                             return Container();
                           }else{
                            return Padding(
@@ -271,6 +271,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                 loginProvider.createGroupDetails(phoneNo!,userDetails,context);
                                 // Navigator.pop(context);
                                 selectList.clear();
+                                groupName.clear();
                                 setState(() {});
                                 widget.contact.map((e) {
                                   int indexValue = widget.contact.indexOf(e);

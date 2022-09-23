@@ -11,6 +11,7 @@ class LocalNotificationService{
     const InitializationSettings initializationSettings =
     InitializationSettings(
       android: AndroidInitializationSettings("@mipmap/ic_launcher"),
+      iOS: IOSInitializationSettings(requestAlertPermission: true,requestBadgePermission: true,requestSoundPermission: true,defaultPresentAlert: true,defaultPresentBadge: true,defaultPresentSound: true)
     );
 
 
@@ -25,20 +26,21 @@ class LocalNotificationService{
   static void createanddisplaynotification(RemoteMessage message) async {
     try {
       final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      const NotificationDetails notificationDetails = NotificationDetails(
+      const NotificationDetails notificationDetailsAndroid = NotificationDetails(
         android: AndroidNotificationDetails(
           "pushnotificationapp",
           "pushnotificationappchannel",
           importance: Importance.max,
           priority: Priority.high,
         ),
+        iOS: IOSNotificationDetails(presentAlert: true,presentSound: true,presentBadge: true,threadIdentifier: "pushnotificationapp",subtitle: "pushnotificationappchannel"),
       );
 
       await _notificationsPlugin.show(
         id,
         message.notification!.title,
         message.notification!.body!,
-        notificationDetails,
+        notificationDetailsAndroid,
         // payload: message.data['_id'],
       );
     } on Exception catch (e) {

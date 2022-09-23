@@ -1,12 +1,11 @@
 import 'dart:async';
-
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:permission_handler/permission_handler.dart';
-
-import '../../utils/app&tokan_id.dart';
+import '../../utils/app&token_id.dart';
+import '../../utils/app_images.dart';
 import 'home_screen.dart';
 
 class AudioCallScreen extends StatefulWidget {
@@ -43,6 +42,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   int _startHour = 0;
   int callSeconds = 0;
   final int timerMaxSeconds = 0;
+  int userId = 0;
+  int streamId = 0;
+  int userCount = 0 ;
 
   @override
   void dispose() {
@@ -54,6 +56,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   @override
   void initState() {
+    debugPrint("client role ${widget.callType}");
+    debugPrint("client role ${widget.name}");
+    debugPrint("client role ${widget.clientRole}");
+    debugPrint("client role ${widget.number}");
+    debugPrint("client role ${widget.channelName}");
     super.initState();
     widget.callType == "voice" ? null : _handleCameraAndMic(Permission.camera);
     _handleCameraAndMic(Permission.microphone);
@@ -61,7 +68,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   Future<void> _handleCameraAndMic(Permission permission) async {
-    final status = await permission.request();
+    await permission.request();
   }
 
   Future<void> initialize() async {
@@ -78,7 +85,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     await _initAgoraRtcEngine();
     _addAgoraEventHandlers(context);
     VideoEncoderConfiguration configuration = VideoEncoderConfiguration();
-    configuration.dimensions = const VideoDimensions(width: 1920, height: 1080);
+    configuration.dimensions = VideoDimensions(width: 1920, height: 1080);
     await _engine.setVideoEncoderConfiguration(configuration);
     await _engine.joinChannel(Token, widget.channelName.toString(), null, 0);
   }
@@ -86,14 +93,16 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   /// Create agora sdk instance and initialize
   Future<void> _initAgoraRtcEngine() async {
     _engine = await RtcEngine.create(APP_ID);
-    widget.callType == "voice" ? null : await _engine.enableVideo();
+    widget.callType == "voice" ? await _engine.enableAudio() : await _engine.enableVideo();
+    await _engine.enableLocalAudio(true);
     await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
-    await _engine.setClientRole(ClientRole.Broadcaster);
+    await _engine.setClientRole(widget.clientRole!);
     widget.callType == "voice" ? _engine.setEnableSpeakerphone(false) : null;
   }
 
   /// Add agora event handlers
-  void _addAgoraEventHandlers(BuildContext context) {
+  void _addAgoraEventHandlers(BuildContext context) async{
+    if (widget.clientRole == ClientRole.Broadcaster) streamId = (await _engine.createDataStream(false, false))!;
     _engine.setEventHandler(RtcEngineEventHandler(error: (code) {
       setState(() {
         final info = 'onError: $code';
@@ -101,6 +110,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       });
     }, joinChannelSuccess: (channel, uid, elapsed) {
       setState(() {
+        userId = uid;
         final info = 'onJoinChannel: "${widget.channelName}", uid: $uid';
         _infoStrings.add(info);
       });
@@ -113,10 +123,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       });
     }, userJoined: (uid, elapsed) {
       setState(() {
+        userId = uid;
         final info = 'userJoined: $uid';
         _infoStrings.add(info);
         _users.add(uid);
-        print("info user ${_infoStrings}");
+        debugPrint("info user ${_infoStrings}");
         callTimer();
       });
     }, userOffline: (uid, elapsed) {
@@ -184,7 +195,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   Widget callTimerStart() {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(
-        _startHour == 1
+        _startHour >= 0
             ? '${((timerMaxSeconds + _startMinutes) ~/ 1).toString().padLeft(2, '0')}:${((timerMaxSeconds + _startSecond) % 60).toString().padLeft(2, '0')}'
             : '${((timerMaxSeconds + _startHour) ~/ 1).toString().padLeft(2, '0')}:${((timerMaxSeconds + _startMinutes) ~/ 1).toString().padLeft(2, '0')}:${((timerMaxSeconds + _startSecond) % 60).toString().padLeft(2, '0')}',
         style: const TextStyle(
@@ -196,11 +207,17 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   /// Helper function to get list of native views
   List<Widget> _getRenderViews() {
     final List<StatefulWidget> list = [];
-    if (ClientRole.Broadcaster == ClientRole.Broadcaster) {
-      list.add(const RtcLocalView.SurfaceView());
+    if (widget.clientRole == ClientRole.Broadcaster) {
+      list.add(RtcLocalView.SurfaceView());
     }
-    _users.forEach((int uid) =>
-        list.add(RtcRemoteView.SurfaceView(channelId: "${widget.channelName}", uid: uid)));
+    _users.forEach((int uid) {
+      list.add(RtcRemoteView.SurfaceView(channelId: "${widget.channelName}", uid: uid));
+    });
+
+    setState(() {
+      userCount = list.length;
+      debugPrint("1111....... ${userCount}");
+    });
     return list;
   }
 
@@ -223,6 +240,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   Widget build(BuildContext context) {
     double wid = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
+
+    _infoStrings.map((e) => debugPrint("userss... ${e}")).toList();
+    debugPrint("User info ${_infoStrings.length}");
     // if (_users.length == 1) {
     //   Future.delayed(const Duration(seconds: 1), () {
     //     if (_users.isEmpty) {
@@ -238,13 +258,14 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           }
         });
       } else {
-        print("user else ${_users.length}");
+        debugPrint("user else ${_users}");
         Future.delayed(const Duration(seconds: 30), () {
           if (_users.isEmpty && _infoStrings.isEmpty) {
             _onNotReciverEnd(context);
           }
         });
       }
+
       // Future.delayed(const Duration(microseconds: 100), () {
       //   if (_users.isEmpty) {
       //     _onReciverEnd(context);
@@ -275,6 +296,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           Center(
             child: Stack(
               children: <Widget>[
+                // camera ? const Center(child: Text("Camera Off")) : Container(),
                 widget.callType == "voice" ? const Text("") : _viewRows(),
                 // widget.call == "voice" ? const Text("") : _panel(),
                 _toolbar(),
@@ -287,9 +309,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   Widget _toolbar() {
+    double height = MediaQuery.of(context).size.height;
     bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     if (widget.clientRole == ClientRole.Broadcaster) {
+      debugPrint("if Part");
       return Container(
         alignment: Alignment.bottomCenter,
         // padding: const EdgeInsets.symmetric(vertical: 48),
@@ -298,11 +322,28 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             !isLandscape ? const SizedBox(height: 50) : Container(),
-            widget.callType == "voice" ? const Icon(Icons.account_circle, size: 120) : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
+            widget.callType == "Audience" ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Live...  ',style: TextStyle(fontSize: 24,color: Colors.white,fontWeight: FontWeight.bold)),
+                  ),
+                  Wrap(
+                    children: [
+                      Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
+                      SizedBox(width: 5,),
+                      Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
+                      SizedBox(width: 5,),
+                    ],
+                  )
+                ])
+                : const SizedBox.shrink(),
+            widget.callType == "voice"  ? const Icon(Icons.account_circle, size: 120) : widget.callType == "Audience" ? Container() : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
             const SizedBox(height: 5),
             widget.callType == "voice" ? Text("${widget.name}",
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, color: Colors.white)) : _users.isEmpty ? Text("${widget.name}",
+                style: const TextStyle(fontSize: 20, color: Colors.white)) : widget.callType == "Audience" ? Container() : _users.isEmpty ? Text("${widget.name}",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 20, color: Colors.white)) : Container(),
             const SizedBox(height: 2),
@@ -329,7 +370,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                         color: _users.length >= 1 ? muted
                                 ? Colors.white
                                 : Colors.blueAccent
-                            : Colors.black12,
+                            : widget.callType == "Audience" ? Colors.blueAccent : Colors.black12,
                         size: 20.0,
                       ),
                       shape: const CircleBorder(),
@@ -366,7 +407,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                           padding: const EdgeInsets.all(12.0),
                         )
                       : RawMaterialButton(
-                          onPressed: _onOffCamera,
+                          onPressed:()=> _onOffCamera(userId),
                           child: Icon(
                             camera
                                 ? Icons.camera_alt_outlined
@@ -450,50 +491,146 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         ),
       );
     } else {
-      return Container(
-        alignment: Alignment.bottomCenter,
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            RawMaterialButton(
-              onPressed: _onToggleMute,
-              child: Icon(
-                muted ? Icons.mic_off : Icons.mic,
-                color: muted ? Colors.white : Colors.blueAccent,
-                size: 20.0,
+      debugPrint("Else Part");
+      return Column(
+        children: [
+          !isLandscape ? const SizedBox(height: 30) : Container(),
+          widget.clientRole == ClientRole.Audience ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Live...  ',style: TextStyle(fontSize: 24,color: Colors.white,fontWeight: FontWeight.bold)),
+                  ),
+                  Wrap(
+                    children: [
+                      Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
+                      SizedBox(width: 5,),
+                      Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
+                      SizedBox(width: 5,),
+                    ],
+                  )
+                ])
+              : const SizedBox.shrink(),
+
+          /*widget.callType == "voice"  ? const Icon(Icons.account_circle, size: 120) : widget.callType == "Audience" ? Container() : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
+          const SizedBox(height: 5),
+          widget.callType == "voice" ? Text("${widget.name}",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, color: Colors.white)) : _users.isEmpty ? Text("${widget.name}",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, color: Colors.white)) : Container(),
+          const SizedBox(height: 2),
+          widget.callType == "voice"
+              ? _users.length >= 1
+              ? Container(child: callTimerStart(),
+          )
+              : const Text("00:00", style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              fontSize: 20))
+              : Container(),
+          Expanded(child: SizedBox(height: MediaQuery.of(context).size.height / 3)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Column(
+                children: [
+                  RawMaterialButton(
+                    onPressed: _onToggleMute,
+                    child: Icon(
+                      muted ? Icons.mic_off : Icons.mic,
+                      color: muted
+                          ? Colors.white : Colors.blueAccent,
+                      size: 20.0),
+                    shape: const CircleBorder(),
+                    elevation: 2.0,
+                    fillColor: muted
+                        ? Colors.blueAccent
+                        : Colors.white,
+                    padding: const EdgeInsets.all(12.0),
+                  ),
+                  const SizedBox(height: 10),
+                  _users.isEmpty
+                      ? const Text("Mute",
+                      style: TextStyle(color: Colors.black45))
+                      : muted
+                      ? const Text("Muted",
+                      style: TextStyle(color: Colors.black45))
+                      : const Text("Mute",
+                      style: TextStyle(color: Colors.black45)),
+                ],
               ),
-              shape: const CircleBorder(),
-              elevation: 2.0,
-              fillColor: muted ? Colors.blueAccent : Colors.white,
-              padding: const EdgeInsets.all(12.0),
-            ),
-            RawMaterialButton(
-              onPressed: () => _onCallEnd(context),
-              child: const Icon(
-                Icons.call_end,
-                color: Colors.white,
-                size: 35.0,
+              Column(children: [
+                RawMaterialButton(
+                  onPressed: _users.length >= 1 ? _onCallHold : null,
+                  child: Icon(
+                    hold ? Icons.pause : Icons.pause,
+                    color: _users.length >= 1 ? hold ? Colors.white : Colors.blueAccent : Colors.black12,
+                    size: 20.0,
+                  ),
+                  shape: const CircleBorder(),
+                  elevation: 2.0,
+                  fillColor: _users.length >= 1 ? hold ? Colors.blueAccent : Colors.white : Colors.white,
+                  padding: const EdgeInsets.all(12.0),
+                ),
+                const SizedBox(height: 10),
+                _users.isEmpty
+                    ? const Text("Hold",
+                    style: TextStyle(color: Colors.black45))
+                    : hold
+                    ? const Text("Hold",
+                    style: TextStyle(color: Colors.black45))
+                    : const Text("Hold",
+                    style: TextStyle(color: Colors.black45)),
+              ]),
+              Column(children: [
+                RawMaterialButton(
+                onPressed: _onCallSpeaker,
+                child: Icon(
+                  speaker ? Icons.volume_up : Icons.volume_up,
+                  color: speaker ? Colors.white : Colors.blueAccent,
+                  size: 20.0,
+                ),
+                shape: const CircleBorder(),
+                elevation: 2.0,
+                fillColor: speaker ? Colors.blueAccent : Colors.white,
+                padding: const EdgeInsets.all(12.0),
               ),
-              shape: const CircleBorder(),
-              elevation: 2.0,
-              fillColor: Colors.redAccent,
-              padding: const EdgeInsets.all(15.0),
-            ),
-            RawMaterialButton(
-              onPressed: _onCallSpeaker,
-              child: Icon(
-                Icons.speaker_phone,
-                color: speaker ? Colors.white : Colors.blueAccent,
-                size: 20.0,
+                const SizedBox(height: 10),
+                _users.isEmpty
+                    ? const Text("Speaker",
+                    style: TextStyle(color: Colors.black45))
+                    : speaker
+                    ? const Text("Speaker",
+                    style: TextStyle(color: Colors.black45))
+                    : const Text("Speaker",
+                    style: TextStyle(color: Colors.black45)),
+              ]),
+            ],
+          ),*/
+          SizedBox(height: height/1.3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+
+              RawMaterialButton(
+                onPressed: () => _onCallEnd(context),
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    border: Border.all(width: 5,color: Colors.red),
+                    borderRadius: BorderRadius.all(Radius.circular(10))
+                  ),
+                  child: Row(
+                    children: [const Text('Leave  ',style: TextStyle(fontSize: 24,fontWeight: FontWeight.bold)),Image.asset(AppImage.leave,height: 25,width: 30,color: Colors.white,)]),
+                ),
+                elevation: 2.0,
               ),
-              shape: const CircleBorder(),
-              elevation: 2.0,
-              fillColor: speaker ? Colors.blueAccent : Colors.white,
-              padding: const EdgeInsets.all(12.0),
-            )
-          ],
-        ),
+            ],
+          ),
+        ],
       );
     }
   }
@@ -596,10 +733,10 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       speaker = !speaker;
     });
     if(speaker){
-      // _engine.isSpeakerphoneEnabled();
-      _engine.setEnableSpeakerphone(true);
-    }else{
       _engine.setEnableSpeakerphone(false);
+      // _engine.isSpeakerphoneEnabled();
+    }else{
+      _engine.setEnableSpeakerphone(true);
     }
 
   }
@@ -608,14 +745,18 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     _engine.switchCamera();
   }
 
-  void _onOffCamera() {
+  void _onOffCamera([int? userId]) {
     setState(() {
       camera = !camera;
     });
-    if(camera){
-      _engine.disableVideo();
+    if(camera == true){
+      _engine.muteLocalVideoStream(true);
+      // _engine.muteRemoteVideoStream(userId!, false);
+      // _engine.disableVideo();
     }else{
-      _engine.enableVideo();
+      _engine.muteLocalVideoStream(false);
+      // _engine.muteRemoteVideoStream(userId!, true);
+      // _engine.enableVideo();
     }
   }
 
