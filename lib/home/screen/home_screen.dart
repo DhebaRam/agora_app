@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../login/provider/login provider.dart';
 import '../../login/screen/login_screen.dart';
-import '../../notificationservice/model/local_notification_service.dart';
+import '../../notificationservice/screen/local_notification_service.dart';
 import '../../notificationservice/screen/recive_call_screen.dart';
 import '../../utils/app&token_id.dart';
 import '../../utils/app_colors.dart';
@@ -32,26 +32,9 @@ class _HomeScreenState extends State<HomeScreen> {
   FirebaseAuth auth = FirebaseAuth.instance;
   final loginProvider = getIt<LoginProvider>();
   bool checkGroupUser = false;
-  // final user = auth.currentUser;
-  // currentUserId = user!.uid;
 
   @override
   void initState() {
-    // FirebaseMessaging.onBackgroundMessage((message) =>
-    //     Navigator.of(context).push(
-    //       MaterialPageRoute(
-    //         builder: (context) => RecivedScreen(
-    //           channel: message.notification!.body,
-    //           type: message.data.values.last,
-    //           clientRole:message.data.values.last=="voice"? ClientRole.Broadcaster : ClientRole.Broadcaster,
-    //           name: message.data.values.first,
-    //         ),
-    //       ),
-    //     )
-    // );
-
-    // 1. This method call when app in terminated state and you get a notificationservice
-    // when you click on notificationservice app open from terminated state and you can get notificationservice data in this method
     FirebaseMessaging.instance.getInitialMessage().then(
           (message) {
             debugPrint("FirebaseMessaging .instance.getInitialMessage");
@@ -77,12 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint("FirebaseMessaging .onMessage.listen1111");
         LocalNotificationService.createanddisplaynotification(message);
         if (message.notification != null) {
-          debugPrint("username....... ${message.data.values.elementAt(0)}");
-          debugPrint("username....... ${message.data.values}");
-          debugPrint("username....... ${message.data.values.first}");
-          debugPrint("username....... ${message.data.values.last}");
-          debugPrint("username....... ${message.data.values.elementAt(1)}");
-
           // Navigator.of(context).pushReplacement(
           //   MaterialPageRoute(
           //     builder: (context) => RecivedScreen(
@@ -224,12 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           left: 18.0, right: 18.0, top: 5),
                                       child: GestureDetector(
                                         child: Card(
-                                          child: /*Column(
-                                      children: [
-                                        const SizedBox(height: 2),*/
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment
-                                                .center,
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Padding(
                                                   padding: isLandscape
@@ -271,7 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ),
                                               ),
                                               snapshot.data!.docs[index].get("group") != true ?
-                                              IconButton(icon: const Icon(
+                                              IconButton(
+                                                  icon: const Icon(
                                                   Icons.phone_outlined,
                                                   color: Colors.black, size: 30),
                                                   onPressed: () async {
@@ -304,7 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
                                                   }) : const SizedBox.shrink(),
                                               const SizedBox(width: 15),
-                                              IconButton(icon: const Icon(
+                                              IconButton(
+                                                  icon: const Icon(
                                                   Icons.video_call_outlined,
                                                   color: Colors.black, size: 30),
                                                   onPressed: () async {
@@ -349,12 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       left: 18.0, right: 18.0, top: 5),
                                   child: GestureDetector(
                                     child: Card(
-                                      child: /*Column(
-                                      children: [
-                                        const SizedBox(height: 2),*/
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment
-                                            .center,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           GestureDetector(
                                             onTap: (){
@@ -402,7 +373,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                           ),
                                           snapshot.data!.docs[index].get("group") != true ?
-                                          IconButton(icon: const Icon(
+                                          IconButton(
+                                              icon: const Icon(
                                               Icons.phone_outlined,
                                               color: Colors.black, size: 30),
                                               onPressed: () async {
@@ -433,7 +405,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 // Navigator.push(context, MaterialPageRoute(builder: (context) => IndexPage()));
                                               }) : const SizedBox.shrink(),
                                           const SizedBox(width: 15),
-                                          IconButton(icon: const Icon(
+                                          IconButton(
+                                              icon: const Icon(
                                               Icons.video_call_outlined,
                                               color: Colors.black, size: 30),
                                               onPressed: () async {
@@ -468,9 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           const SizedBox(width: 10),
                                         ],
                                       ),
-                                      /*const SizedBox(height: 10),
-                                      ],
-                                    ),*/),
+                                    ),
                                   ),
                                 );
                               }
@@ -527,9 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            // backgroundColor: AppColor.appColor,
-            content: const Text(
-              "Are you sure want to exit ?", textAlign: TextAlign.center,),
+            content: const Text("Are you sure want to exit ?", textAlign: TextAlign.center),
             actions: [
               MaterialButton(
                 child: const Text('Yes'),

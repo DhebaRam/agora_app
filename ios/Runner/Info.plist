@@ -20,6 +20,10 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>NSCameraUsageDescription</key>
+    <string>Please grant camera access</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Please grant microphone access</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

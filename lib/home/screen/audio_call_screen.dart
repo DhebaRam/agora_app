@@ -504,10 +504,23 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                   ),
                   Wrap(
                     children: [
+                      RawMaterialButton(
+                        onPressed: _onCallSpeaker,
+                        child: Icon(
+                          speaker ? Icons.volume_up : Icons.volume_up,
+                          color: speaker ? Colors.white : Colors.blueAccent,
+                          size: 20.0,
+                        ),
+                        shape: const CircleBorder(),
+                        elevation: 2.0,
+                        fillColor: speaker ? Colors.blueAccent : Colors.white,
+                        padding: const EdgeInsets.all(12.0),
+                      ),
+                      const SizedBox(width: 5),
                       Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
-                      SizedBox(width: 5,),
+                      const SizedBox(width: 5),
                       Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
-                      SizedBox(width: 5,),
+                      const SizedBox(width: 5),
                     ],
                   )
                 ])
@@ -733,10 +746,10 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       speaker = !speaker;
     });
     if(speaker){
-      _engine.setEnableSpeakerphone(false);
+      _engine.setEnableSpeakerphone(true);
       // _engine.isSpeakerphoneEnabled();
     }else{
-      _engine.setEnableSpeakerphone(true);
+      _engine.setEnableSpeakerphone(false);
     }
 
   }
