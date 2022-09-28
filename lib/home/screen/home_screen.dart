@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    FirebaseMessaging.instance.getInitialMessage().then(
+    /*FirebaseMessaging.instance.getInitialMessage().then(
           (message) {
             debugPrint("FirebaseMessaging .instance.getInitialMessage");
             LocalNotificationService.createanddisplaynotification(message!);
@@ -60,16 +60,16 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint("FirebaseMessaging .onMessage.listen1111");
         LocalNotificationService.createanddisplaynotification(message);
         if (message.notification != null) {
-          // Navigator.of(context).pushReplacement(
-          //   MaterialPageRoute(
-          //     builder: (context) => RecivedScreen(
-          //       channel: message.notification!.body,
-          //       type: message.data.values.last,
-          //       clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
-          //       name: message.data.values.first,
-          //     ),
-          //   ),
-          // );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => RecivedScreen(
+                channel: message.notification!.body,
+                type: message.data.values.last,
+                clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
+                name: message.data.values.first,
+              ),
+            ),
+          );
 
         }
       },
@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       },
-    );
+    );*/
     _handleCameraAndMic(Permission.camera);
     _handleCameraAndMic(Permission.microphone);
     // TODO: implement initState
@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       }
                                                     }).toList();
                                                     // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
-                                                    Navigator.pushReplacement(context,
+                                                    Navigator.push(context,
                                                         MaterialPageRoute(
                                                             builder: (context) =>
                                                                 AudioCallScreen(
@@ -302,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       }
                                                     }).toList();
                                                     // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
-                                                    Navigator.pushReplacement(context,
+                                                    Navigator.push(context,
                                                         MaterialPageRoute(
                                                             builder: (context) =>
                                                                 AudioCallScreen(
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         children: [
                                           GestureDetector(
                                             onTap: (){
-                                              Navigator.pushReplacement(context,
+                                              Navigator.push(context,
                                                   MaterialPageRoute(
                                                       builder: (context) => //LiveScreen(channelName: channel,)));
                                                       const AudioCallScreen(
@@ -396,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   }
                                                 }).toList();
                                                 // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"voice");
-                                                Navigator.pushReplacement(context,
+                                                Navigator.push(context,
                                                     MaterialPageRoute(
                                                         builder: (context) =>
                                                             AudioCallScreen(clientRole: ClientRole.Broadcaster, name: snapshot.data!.docs[index].get("user_name"),
@@ -429,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   }
                                                 }).toList();
                                                 // loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken"),snapshot.data!.docs[index].get("user_name"),snapshot.data!.docs[index].get("phone_No"),name.join(),"video");
-                                                Navigator.pushReplacement(context,
+                                                Navigator.push(context,
                                                     MaterialPageRoute(
                                                         builder: (context) =>
                                                             AudioCallScreen(
@@ -441,7 +441,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           const SizedBox(width: 10),
                                         ],
                                       ),
-                                    ),
+                                      /*const SizedBox(height: 10),
+                                      ],
+                                    ),*/),
                                   ),
                                 );
                               }
@@ -478,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
             }).toList();
 
-            Navigator.pushReplacement(context,
+            Navigator.push(context,
                 MaterialPageRoute(
                     builder: (context) => //LiveScreen(channelName: channel,)));
                         const AudioCallScreen(
@@ -498,7 +500,9 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            content: const Text("Are you sure want to exit ?", textAlign: TextAlign.center),
+            // backgroundColor: AppColor.appColor,
+            content: const Text(
+              "Are you sure want to exit ?", textAlign: TextAlign.center,),
             actions: [
               MaterialButton(
                 child: const Text('Yes'),

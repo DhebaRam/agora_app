@@ -3,23 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>177169818245-34g3k4822elpi2m65cf0ht3meiatcbt7.apps.googleusercontent.com</string>
+	<string>1000660433951-97qitudi0c60b4d8vre6qnflc9ghe1ji.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.177169818245-34g3k4822elpi2m65cf0ht3meiatcbt7</string>
-	<key>ANDROID_CLIENT_ID</key>
-	<string>177169818245-3lbeu8pj6p4mkef8863cj4ivnvb9eecq.apps.googleusercontent.com</string>
+	<string>com.googleusercontent.apps.1000660433951-97qitudi0c60b4d8vre6qnflc9ghe1ji</string>
 	<key>API_KEY</key>
-	<string>AIzaSyC_QIWx74v6i0_50dNDb2oXp_Hp8fLCZko</string>
+	<string>AIzaSyDZLTIVC48exDZLXntwpH4e4b1Z23dZZWk</string>
 	<key>GCM_SENDER_ID</key>
-	<string>177169818245</string>
+	<string>1000660433951</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.agoraApp</string>
+	<string>com.agoraApp</string>
 	<key>PROJECT_ID</key>
-	<string>agoraapp-b0ae3</string>
+	<string>agoraapp-6ffc5</string>
 	<key>STORAGE_BUCKET</key>
-	<string>agoraapp-b0ae3.appspot.com</string>
+	<string>agoraapp-6ffc5.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:177169818245:ios:2fad2191bf17a20717ffec</string>
+	<string>1:1000660433951:ios:0c67e80318f76b5d02a92a</string>
 </dict>
 </plist>

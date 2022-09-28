@@ -1,4 +1,4 @@
-package com.example.agora_app
+package com.elsner.agora_app
 
 import io.flutter.embedding.android.FlutterActivity
 

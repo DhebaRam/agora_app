@@ -24,6 +24,7 @@ class LocalNotificationService{
   }
 
   static void createanddisplaynotification(RemoteMessage message) async {
+    print("Back Groud Call....");
     try {
       final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       const NotificationDetails notificationDetailsAndroid = NotificationDetails(
@@ -43,6 +44,7 @@ class LocalNotificationService{
         notificationDetailsAndroid,
         // payload: message.data['_id'],
       );
+      print(".........");
     } on Exception catch (e) {
       print("catch block $e");
     }

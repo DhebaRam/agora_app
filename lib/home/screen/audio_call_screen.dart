@@ -45,6 +45,8 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   int userId = 0;
   int streamId = 0;
   int userCount = 0 ;
+  int chanelCount = 0;
+
 
   @override
   void dispose() {
@@ -99,7 +101,16 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     await _engine.setClientRole(widget.clientRole!);
     widget.callType == "voice" ? _engine.setEnableSpeakerphone(false) : null;
   }
-
+  Future<void> getChannelCount() async {
+    var membersData = await _engine.getAudioTrackCount();
+    setState(() {
+      if (membersData != null) {
+        print("Method caleed...1");
+        chanelCount = membersData;
+        print("Channel Count: $chanelCount");
+      }
+    });
+  }
   /// Add agora event handlers
   void _addAgoraEventHandlers(BuildContext context) async{
     if (widget.clientRole == ClientRole.Broadcaster) streamId = (await _engine.createDataStream(false, false))!;
@@ -109,6 +120,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         _infoStrings.add(info);
       });
     }, joinChannelSuccess: (channel, uid, elapsed) {
+      getChannelCount();
       setState(() {
         userId = uid;
         final info = 'onJoinChannel: "${widget.channelName}", uid: $uid';
@@ -122,6 +134,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         }
       });
     }, userJoined: (uid, elapsed) {
+      getChannelCount();
       setState(() {
         userId = uid;
         final info = 'userJoined: $uid';
@@ -460,10 +473,10 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                   _users.isEmpty
                       ? const Text("Speaker",
                           style: TextStyle(color: Colors.black45))
-                      : speaker
+                      : widget.callType == "voice"
                           ? const Text("Speaker",
                               style: TextStyle(color: Colors.black45))
-                          : const Text("Speaker",
+                          : const Text("Switch",
                               style: TextStyle(color: Colors.black45)),
                 ]),
               ],
@@ -517,7 +530,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                         padding: const EdgeInsets.all(12.0),
                       ),
                       const SizedBox(width: 5),
-                      Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
+                      const Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
                       const SizedBox(width: 5),
                       Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
                       const SizedBox(width: 5),
@@ -628,7 +641,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
             children: <Widget>[
 
               RawMaterialButton(
-                onPressed: () => _onCallEnd(context),
+                onPressed: () => _onCallLiveEnd(context),
                 child: Container(
                   padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -738,7 +751,12 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     setState(() {
       muted = !muted;
     });
-    _engine.muteLocalAudioStream(muted);
+    if(muted){
+      _engine.disableAudio();
+    }else{
+      _engine.enableAudio();
+    }
+
   }
 
   void _onCallSpeaker() {
@@ -778,9 +796,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       hold = !hold;
     });
     if(hold){
-      _engine.disableAudio();
+      _engine.muteLocalAudioStream(true);
     }else{
-      _engine.enableAudio();
+      _engine.muteLocalAudioStream(false);
     }
   }
 
@@ -789,6 +807,14 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     _users.clear();
     _engine.leaveChannel();
     _engine.destroy();
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()));
+  }
+  void _onCallLiveEnd(BuildContext context) {
+    // Navigator.pop(context);
+    // _users.clear();
+    _engine.leaveChannel();
+    // _engine.destroy();
     Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()));
   }

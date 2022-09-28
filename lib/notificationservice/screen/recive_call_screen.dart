@@ -12,14 +12,14 @@ class RecivedScreen extends StatefulWidget {
   final ClientRole? clientRole;
   final String? name;
 
-  const RecivedScreen({Key? key,this.channel, this.type,this.clientRole, this.name}) : super(key: key);
+  const RecivedScreen({Key? key, required this.channel, required this.type,required this.clientRole,required this.name}) : super(key: key);
 
   @override
   State<RecivedScreen> createState() => RecivedScreenState();
 }
 
 class RecivedScreenState extends State<RecivedScreen> {
-  void _onNotReciverEnd(BuildContext context) {
+  void onNotReciverEnd(BuildContext context) {
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>const HomeScreen()));
   }
   Future<void> initClearNotificationsState() async {
@@ -32,12 +32,13 @@ class RecivedScreenState extends State<RecivedScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    print("recive Screen .......");
     initClearNotificationsState();
   }
   @override
   Widget build(BuildContext context) {
     Future.delayed(const Duration(seconds: 30), () {
-        _onNotReciverEnd(context);
+        onNotReciverEnd(context);
     });
     bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     double wid = MediaQuery.of(context).size.width;
@@ -115,7 +116,17 @@ class RecivedScreenState extends State<RecivedScreen> {
   }
   void _onCallRecived(BuildContext context) {
     // Navigator.pop(context);
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: widget.clientRole,name: widget.name ,callType: widget.type, number: widget.channel,channelName: channel,)));
+    initClearNotificationsState();
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => AudioCallScreen(clientRole: widget.clientRole,name: widget.name ,callType: widget.type, number: widget.channel,channelName: channel)),(Route<dynamic> route) => false);
   }
+}
+
+class ScreenArguments {
+  final String channel;
+  final String type;
+  final ClientRole clientRole;
+  final String name;
+
+  ScreenArguments(this.channel, this.type, this.clientRole, this.name);
 }
