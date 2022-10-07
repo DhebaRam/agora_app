@@ -26,13 +26,11 @@ class RecivedScreenState extends State<RecivedScreen> {
     ClearAllNotifications.clear();
   }
 
-
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    print("recive Screen .......");
+    print("recive Screen ....... ${widget.name} ${widget.channel} ${widget.type} ${widget.clientRole}");
     initClearNotificationsState();
   }
   @override
@@ -111,8 +109,7 @@ class RecivedScreenState extends State<RecivedScreen> {
   void _onCallEnd(BuildContext context) {
     initClearNotificationsState();
     // Navigator.pop(context);
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
   }
   void _onCallRecived(BuildContext context) {
     // Navigator.pop(context);

@@ -1,17 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../login/provider/login provider.dart';
 import '../../login/screen/login_screen.dart';
-import '../../notificationservice/screen/local_notification_service.dart';
-import '../../notificationservice/screen/recive_call_screen.dart';
 import '../../utils/app&token_id.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/get_it.dart';
@@ -32,67 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
   FirebaseAuth auth = FirebaseAuth.instance;
   final loginProvider = getIt<LoginProvider>();
   bool checkGroupUser = false;
+  StreamSubscription? connection;
+  bool isoffline = false;
 
   @override
   void initState() {
-    /*FirebaseMessaging.instance.getInitialMessage().then(
-          (message) {
-            debugPrint("FirebaseMessaging .instance.getInitialMessage");
-            LocalNotificationService.createanddisplaynotification(message!);
-            if (message.notification != null) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => RecivedScreen(
-                    channel: message.notification!.body,
-                    type: message.data.values.last,
-                    clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
-                    name: message.data.values.first,
-                  ),
-                ),
-              );
-            }
-          }
-    );
-
-    // 2. This method only call when App in forground it mean app must be opened
-    FirebaseMessaging.onMessage.listen(
-          (message) {
-        debugPrint("FirebaseMessaging .onMessage.listen1111");
-        LocalNotificationService.createanddisplaynotification(message);
-        if (message.notification != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => RecivedScreen(
-                channel: message.notification!.body,
-                type: message.data.values.last,
-                clientRole:message.data.values.last=="Audience" ? ClientRole.Audience : ClientRole.Broadcaster,
-                name: message.data.values.first,
-              ),
-            ),
-          );
-
-        }
-      },
-    );
-
-    // 3. This method only call when App in background and not terminated(not closed)
-    FirebaseMessaging.onMessageOpenedApp.listen(
-          (message) {
-        debugPrint("FirebaseMessaging .onMessageOpenedApp.listen");
-        if (message.notification != null) {
-          LocalNotificationService.createanddisplaynotification(message);
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (context) => RecivedScreen(
-                channel: message.notification!.body,
-                type: message.data.values.last,
-                clientRole:message.data.values.last=="Audience"? ClientRole.Audience : ClientRole.Broadcaster,
-                name: message.data.values.first,
-              ),
-            ),
-          );
-        }
-      },
-    );*/
     _handleCameraAndMic(Permission.camera);
     _handleCameraAndMic(Permission.microphone);
     // TODO: implement initState
@@ -101,9 +45,41 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _handleCameraAndMic(Permission permission) async {
     await permission.request();
   }
+  void checkInternet(){
+    connection = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      // whenevery connection status is changed.
+      if(result == ConnectivityResult.none){
+        //there is no any connection
+        setState(() {
+          isoffline = true;
+        });
+      }else if(result == ConnectivityResult.mobile){
+        //connection is mobile data network
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.wifi){
+        //connection is from wifi
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.ethernet){
+        //connection is from wired connection
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.bluetooth){
+        //connection is from bluetooth threatening
+        setState(() {
+          isoffline = false;
+        });
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
-    // double wid = MediaQuery.of(context).size.width;
+    checkInternet();
+    double wid = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
     bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -111,14 +87,43 @@ class _HomeScreenState extends State<HomeScreen> {
       onWillPop: () => willPop(),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(title: Row(
+        appBar: AppBar(
+            iconTheme: const IconThemeData(
+              color: Colors.indigoAccent, //change your color here
+            )
+            ,title: Row(
           children: [
-            const Expanded(child: Text("Contact")),
+            const Expanded(child: Text("Contacts")),
             IconButton(onPressed: () async{
-              FirebaseAuth.instance.signOut();
-              final prefs = await SharedPreferences.getInstance();
-              prefs.clear();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+              return showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      backgroundColor: AppColor.appColor,
+                      content: const Text(
+                        "Are you sure you want to logout?", textAlign: TextAlign.center,),
+                      actions: [
+                        MaterialButton(
+                          color: AppColor.blue,
+                          child: const Text('Yes'),
+                          onPressed: () async{
+                            FirebaseAuth.instance.signOut();
+                            final prefs = await SharedPreferences.getInstance();
+                            prefs.clear();
+                            await firestore.collection('use_details').doc(auth.currentUser!.phoneNumber).delete();
+                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+                          },
+                        ),
+                        MaterialButton(
+                          color: AppColor.blue,
+                          child: const Text('No'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        )
+                      ],
+                    );
+                  });
             }, icon: const Icon(Icons.power_settings_new,color: AppColor.white,))
           ],
         ),backgroundColor: Colors.indigoAccent),
@@ -131,8 +136,44 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: Column(
+          child: isoffline ? SizedBox(
+            height: height,
+            width: wid,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                //Here I am using an svg icon
+                Icon(Icons.signal_wifi_statusbar_connected_no_internet_4,size: 280),
+                // Image.asset("assets/images/checkInternet.png",
+                //   width: 200,
+                //   height: 200,
+                // ),
+                SizedBox(height: 50),
+                Text(
+                  'Internet connection lost!',
+                  style: TextStyle(fontSize: 19, color: AppColor.white),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Check your connection and try again.',
+                  style: TextStyle(fontSize: 16, color: AppColor.white),
+                )
+              ],
+            ),
+          ) : Column(
             children: [
+              isoffline ? Container(
+                width: double.infinity,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.only(bottom:5),
+                color: isoffline?Colors.red:Colors.lightGreen,
+                //red color on offline, green on online
+                padding:const EdgeInsets.all(10),
+                child: Text(isoffline?"Device is Offline":"Device is Online",
+                  style: const TextStyle(
+                      fontSize: 20, color: Colors.white
+                  ),),
+              ) : const Text(""),
               Padding(padding: const EdgeInsets.only(left: 18.0,right: 18.0,top: 5),
                 child: GestureDetector(
                   onTap: () {
@@ -174,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
 
                       if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppColor.blue,));
-                      if(snapshot.data!.size ==0) return const Center(child: Text("No Data found.."),);
+                      if(snapshot.data!.size ==0) return const Center(child: Text("No User found.."),);
                       if(snapshot.hasData) {
                         return ListView.builder(
                             itemCount: snapshot.data!.docs.length,
@@ -261,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
                                                           loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],
                                                               snapshot.data!.docs[index].get("user_name"),
-                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice");
+                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice","Voice Call");
                                                         }
                                                         // debugPrint("22211 ${e.get("phone_No")[i]}");
                                                       }
@@ -297,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           loginProvider.audioCallNotification(
                                                               snapshot.data!.docs[index].get("deviceNotificationToken")[i],
                                                               snapshot.data!.docs[index].get("user_name"),
-                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video");
+                                                              snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video","Video Call");
                                                         }
                                                       }
                                                     }).toList();
@@ -390,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       debugPrint("deviceNotificationToken ${auth.currentUser!.uid}");
                                                       loginProvider.audioCallNotification(snapshot.data!.docs[index].get("deviceNotificationToken")[i],
                                                           snapshot.data!.docs[index].get("user_name"),
-                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice");
+                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "voice","Voice Call");
                                                     }
                                                     // debugPrint("22211 ${e.get("phone_No")[i]}");
                                                   }
@@ -423,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       loginProvider.audioCallNotification(
                                                           snapshot.data!.docs[index].get("deviceNotificationToken")[i],
                                                           snapshot.data!.docs[index].get("user_name"),
-                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video");
+                                                          snapshot.data!.docs[index].get("phone_No")[i], name.join(), "video", "Video Call");
                                                     }
                                                     // debugPrint("22211 ${e.get("phone_No")[i]}");
                                                   }
@@ -441,9 +482,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           const SizedBox(width: 10),
                                         ],
                                       ),
-                                      /*const SizedBox(height: 10),
-                                      ],
-                                    ),*/),
+                                      ),
                                   ),
                                 );
                               }
@@ -459,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-          floatingActionButton: FloatingActionButton.extended(
+          floatingActionButton: isoffline ? null : FloatingActionButton.extended(
             heroTag: 'uniqueTag',
             backgroundColor: Colors.indigoAccent,
             label: Row(
@@ -476,7 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   debugPrint("Notification ${e.get("user_name")}");
                   loginProvider.audioCallNotification(e.get("deviceNotificationToken").join(),
                       e.get("user_name"),
-                      e.get("phone_No").join(), name.join(), "Audience");
+                      e.get("phone_No").join(), name.join(), "Audience","Live.");
                 }
             }).toList();
 

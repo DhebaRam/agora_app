@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:permission_handler/permission_handler.dart';
+import '../../login/provider/login provider.dart';
 import '../../utils/app&token_id.dart';
 import '../../utils/app_images.dart';
+import '../../utils/get_it.dart';
 import 'home_screen.dart';
 
 class AudioCallScreen extends StatefulWidget {
-  final ClientRole? clientRole;
   final String? name;
+  final ClientRole? clientRole;
   final String? callType;
   final String? number;
   final String? channelName;
@@ -44,9 +46,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   final int timerMaxSeconds = 0;
   int userId = 0;
   int streamId = 0;
-  int userCount = 0 ;
-  int chanelCount = 0;
+  int userCount = 0;
 
+  int chanelCount = 0;
+  bool toolbarShow = false;
+  final loginProvider = getIt<LoginProvider>();
 
   @override
   void dispose() {
@@ -58,9 +62,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   @override
   void initState() {
-    debugPrint("client role ${widget.callType}");
+    debugPrint("client role121212 ${widget.callType}");
     debugPrint("client role ${widget.name}");
-    debugPrint("client role ${widget.clientRole}");
+    debugPrint("client role111 ${widget.clientRole}");
     debugPrint("client role ${widget.number}");
     debugPrint("client role ${widget.channelName}");
     super.initState();
@@ -95,32 +99,23 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   /// Create agora sdk instance and initialize
   Future<void> _initAgoraRtcEngine() async {
     _engine = await RtcEngine.create(APP_ID);
-    widget.callType == "voice" ? await _engine.enableAudio() : await _engine.enableVideo();
+    widget.callType == "voice"
+        ? await _engine.enableAudio()
+        : await _engine.enableVideo();
     await _engine.enableLocalAudio(true);
     await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
     await _engine.setClientRole(widget.clientRole!);
     widget.callType == "voice" ? _engine.setEnableSpeakerphone(false) : null;
   }
-  Future<void> getChannelCount() async {
-    var membersData = await _engine.getAudioTrackCount();
-    setState(() {
-      if (membersData != null) {
-        print("Method caleed...1");
-        chanelCount = membersData;
-        print("Channel Count: $chanelCount");
-      }
-    });
-  }
   /// Add agora event handlers
-  void _addAgoraEventHandlers(BuildContext context) async{
-    if (widget.clientRole == ClientRole.Broadcaster) streamId = (await _engine.createDataStream(false, false))!;
-    _engine.setEventHandler(RtcEngineEventHandler(error: (code) {
+  void _addAgoraEventHandlers(BuildContext context) async {
+    if (ClientRole.Broadcaster == ClientRole.Broadcaster) {
+      _engine.setEventHandler(RtcEngineEventHandler(error: (code) {
       setState(() {
         final info = 'onError: $code';
         _infoStrings.add(info);
       });
     }, joinChannelSuccess: (channel, uid, elapsed) {
-      getChannelCount();
       setState(() {
         userId = uid;
         final info = 'onJoinChannel: "${widget.channelName}", uid: $uid';
@@ -129,12 +124,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     }, leaveChannel: (stats) {
       setState(() {
         _infoStrings.add('onLeaveChannel');
-        if(_users.length>=1){
+        if (_users.length >= 1) {
           _users.clear();
         }
       });
     }, userJoined: (uid, elapsed) {
-      getChannelCount();
       setState(() {
         userId = uid;
         final info = 'userJoined: $uid';
@@ -148,6 +142,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         final info = 'userOffline: $uid';
         _infoStrings.add(info);
         _users.remove(uid);
+        userCount = _users.length;
       });
     }, firstRemoteVideoFrame: (uid, width, height, elapsed) {
       setState(() {
@@ -155,6 +150,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         _infoStrings.add(info);
       });
     }));
+    }
   }
 
   void callTimer() {
@@ -229,7 +225,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
     setState(() {
       userCount = list.length;
-      debugPrint("1111....... ${userCount}");
+      debugPrint("1111....... ${list}");
     });
     return list;
   }
@@ -238,14 +234,15 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   Widget _videoView(view) {
     return Expanded(child: Container(child: view));
   }
+  Widget _videoViewList(view) {
+    return Container(child: view);
+  }
 
   /// Video view row wrapper
   Widget _expandedVideoRow(List<Widget> views) {
     final wrappedViews = views.map<Widget>(_videoView).toList();
-    return Expanded(
-      child: Row(
-        children: wrappedViews,
-      ),
+    return Row(
+      children: wrappedViews,
     );
   }
 
@@ -264,61 +261,60 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     //   });
     // }
     // Future.delayed(const Duration(seconds: 30), () {
-      if (_users.length >= 1) {
-        Future.delayed(const Duration(seconds: 1), () {
-          if (_users.isEmpty) {
-            _onReciverEnd(context);
-          }
-        });
-      } else {
-        debugPrint("user else ${_users}");
-        Future.delayed(const Duration(seconds: 30), () {
-          if (_users.isEmpty && _infoStrings.isEmpty) {
-            _onNotReciverEnd(context);
-          }
-        });
-      }
+    if (_users.length >= 1) {
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_users.isEmpty) {
+          _onReciverEnd(context);
+        }
+      });
+    } else {
+      debugPrint("user else ${_users}");
+      debugPrint("user else ${_users.length}");
+      debugPrint("user else ${_infoStrings.isEmpty}");
+      Future.delayed(const Duration(seconds: 30), () {
+        if (_users.length >= 1 && _infoStrings.isEmpty) {
+          print("call end id part");
+          _onNotReciverEnd(context);
+        }
+      });
+    }
 
-      // Future.delayed(const Duration(microseconds: 100), () {
-      //   if (_users.isEmpty) {
-      //     _onReciverEnd(context);
-      //   }
-      // });
-    // });
-    // if (_users.length == 1) {
-    //   Future.delayed(const Duration(seconds: 1), () {
-    //     if (_users.isEmpty) {
-    //       _onReciverEnd(context);
-    //     }
-    //   });
-    // }
     return Scaffold(
-        body: Center(
-      child: Stack(
-        children: [
-          Container(
-              height: height,
-              width: wid,
-              decoration: const BoxDecoration(
-                color: Colors.purpleAccent,
-                image: DecorationImage(
-                  image: AssetImage("assets/images/backimage.jpeg"),
-                  fit: BoxFit.cover,
-                ),
-              )),
-          Center(
-            child: Stack(
-              children: <Widget>[
-                // camera ? const Center(child: Text("Camera Off")) : Container(),
-                widget.callType == "voice" ? const Text("") : _viewRows(),
-                // widget.call == "voice" ? const Text("") : _panel(),
-                _toolbar(),
-              ],
+        body: Stack(
+          children: [
+            Container(
+                height: height,
+                width: wid,
+                decoration: const BoxDecoration(
+                  color: Colors.purpleAccent,
+                  image: DecorationImage(
+                    image: AssetImage("assets/images/backimage.jpeg"),
+                    fit: BoxFit.cover,
+                  ),
+                )),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  toolbarShow = !toolbarShow;
+                });
+              },
+              child: Stack(
+                children: <Widget>[
+                  // camera ? const Center(child: Text("Camera Off")) : Container(),
+                  widget.callType == "voice" ? const Text("") : _viewRows(),
+                  // widget.call == "voice" ? const Text("") : _panel(),
+                  if (widget.callType == "video") ...{
+                    if (!toolbarShow) ...{
+                      _toolbar(),
+                    }
+                  } else ...{
+                    _toolbar(),
+                  }
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    ));
+          ],
+        ));
   }
 
   Widget _toolbar() {
@@ -335,63 +331,105 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             !isLandscape ? const SizedBox(height: 50) : Container(),
-            widget.callType == "Audience" ? Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text('Live...  ',style: TextStyle(fontSize: 24,color: Colors.white,fontWeight: FontWeight.bold)),
-                  ),
-                  Wrap(
+            widget.callType == "Audience"
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
-                      SizedBox(width: 5,),
-                      Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
-                      SizedBox(width: 5,),
-                    ],
-                  )
-                ])
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('Live...  ',
+                              style: TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        Wrap(
+                          children: [
+                            Icon(
+                              Icons.remove_red_eye,
+                              color: Colors.black,
+                              size: 30,
+                            ),
+                            SizedBox(
+                              width: 5,
+                            ),
+                          /*  Text("${userCount}",
+                              style: const TextStyle(
+                                  fontSize: 25, color: Colors.white),
+                            ),
+                            SizedBox(width: 5),*/
+                          ],
+                        )
+                      ])
                 : const SizedBox.shrink(),
-            widget.callType == "voice"  ? const Icon(Icons.account_circle, size: 120) : widget.callType == "Audience" ? Container() : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
+            widget.callType == "voice"
+                ? const Icon(Icons.account_circle, size: 120)
+                : widget.callType == "Audience"
+                    ? Container()
+                    : _users.isEmpty
+                        ? const Icon(Icons.account_circle, size: 120)
+                        : Container(),
             const SizedBox(height: 5),
-            widget.callType == "voice" ? Text("${widget.name}",
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, color: Colors.white)) : widget.callType == "Audience" ? Container() : _users.isEmpty ? Text("${widget.name}",
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, color: Colors.white)) : Container(),
+            widget.callType == "voice"
+                ? Text("${widget.name}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 20, color: Colors.white))
+                : widget.callType == "Audience"
+                    ? Container()
+                    : _users.isEmpty
+                        ? Text("${widget.name}",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontSize: 20, color: Colors.white))
+                        : Container(),
             const SizedBox(height: 2),
             widget.callType == "voice"
                 ? _users.length >= 1
                     ? Container(
                         child: callTimerStart(),
                       )
-                    : const Text("00:00", style: TextStyle(
+                    : const Text("00:00",
+                        style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                             fontSize: 20))
                 : Container(),
-            Expanded(child: SizedBox(height: MediaQuery.of(context).size.height / 3)),
+            SizedBox(height: MediaQuery.of(context).size.height / 3),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Column(
                   children: [
                     RawMaterialButton(
-                      onPressed: _users.length >= 1 ? _onToggleMute : null,
+                      onPressed: _users.length >= 1
+                          ? _onToggleMute
+                          : widget.callType == "Audience"
+                              ? _onToggleMute
+                              : null,
                       child: Icon(
                         muted ? Icons.mic_off : Icons.mic,
-                        color: _users.length >= 1 ? muted
+                        color: _users.length >= 1
+                            ? muted
                                 ? Colors.white
                                 : Colors.blueAccent
-                            : widget.callType == "Audience" ? Colors.blueAccent : Colors.black12,
+                            : widget.callType == "Audience"
+                                ? muted
+                                    ? Colors.white
+                                    : Colors.blueAccent
+                                : Colors.blueAccent,
                         size: 20.0,
                       ),
                       shape: const CircleBorder(),
                       elevation: 2.0,
-                      fillColor: _users.length >= 1 ? muted
+                      fillColor: _users.length >= 1
+                          ? muted
                               ? Colors.blueAccent
                               : Colors.white
-                          : Colors.white,
+                          : widget.callType == "Audience"
+                              ? muted
+                                  ? Colors.blueAccent
+                                  : Colors.white
+                              : Colors.white,
                       padding: const EdgeInsets.all(12.0),
                     ),
                     const SizedBox(height: 10),
@@ -411,16 +449,24 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                           onPressed: _users.length >= 1 ? _onCallHold : null,
                           child: Icon(
                             hold ? Icons.pause : Icons.pause,
-                            color: _users.length >= 1 ? hold ? Colors.white : Colors.blueAccent : Colors.black12,
+                            color: _users.length >= 1
+                                ? hold
+                                    ? Colors.white
+                                    : Colors.blueAccent
+                                : Colors.black12,
                             size: 20.0,
                           ),
                           shape: const CircleBorder(),
                           elevation: 2.0,
-                          fillColor: _users.length >= 1 ? hold ? Colors.blueAccent : Colors.white : Colors.white,
+                          fillColor: _users.length >= 1
+                              ? hold
+                                  ? Colors.blueAccent
+                                  : Colors.white
+                              : Colors.white,
                           padding: const EdgeInsets.all(12.0),
                         )
                       : RawMaterialButton(
-                          onPressed:()=> _onOffCamera(userId),
+                          onPressed: () => _onOffCamera(userId),
                           child: Icon(
                             camera
                                 ? Icons.camera_alt_outlined
@@ -508,35 +554,49 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       return Column(
         children: [
           !isLandscape ? const SizedBox(height: 30) : Container(),
-          widget.clientRole == ClientRole.Audience ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text('Live...  ',style: TextStyle(fontSize: 24,color: Colors.white,fontWeight: FontWeight.bold)),
-                  ),
-                  Wrap(
-                    children: [
-                      RawMaterialButton(
-                        onPressed: _onCallSpeaker,
-                        child: Icon(
-                          speaker ? Icons.volume_up : Icons.volume_up,
-                          color: speaker ? Colors.white : Colors.blueAccent,
-                          size: 20.0,
-                        ),
-                        shape: const CircleBorder(),
-                        elevation: 2.0,
-                        fillColor: speaker ? Colors.blueAccent : Colors.white,
-                        padding: const EdgeInsets.all(12.0),
+          widget.clientRole == ClientRole.Audience
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text('Live...  ',
+                            style: TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
                       ),
-                      const SizedBox(width: 5),
-                      const Icon(Icons.remove_red_eye,color: Colors.black,size: 30,),
-                      const SizedBox(width: 5),
-                      Text("${_users.length}",style: const TextStyle(fontSize: 25,color: Colors.white),),
-                      const SizedBox(width: 5),
-                    ],
-                  )
-                ])
+                      Wrap(
+                        children: [
+                          RawMaterialButton(
+                            onPressed: _onCallSpeaker,
+                            child: Icon(
+                              speaker ? Icons.volume_up : Icons.volume_up,
+                              color: speaker ? Colors.white : Colors.blueAccent,
+                              size: 20.0,
+                            ),
+                            shape: const CircleBorder(),
+                            elevation: 2.0,
+                            fillColor:
+                                speaker ? Colors.blueAccent : Colors.white,
+                            padding: const EdgeInsets.all(12.0),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.remove_red_eye,
+                            color: Colors.black,
+                            size: 30,
+                          ),
+                          const SizedBox(width: 5),
+                          /*Text(
+                            "$userCount",
+                            style: const TextStyle(
+                                fontSize: 25, color: Colors.white),
+                          ),
+                          const SizedBox(width: 5),*/
+                        ],
+                      )
+                    ])
               : const SizedBox.shrink(),
 
           /*widget.callType == "voice"  ? const Icon(Icons.account_circle, size: 120) : widget.callType == "Audience" ? Container() : _users.isEmpty ? const Icon(Icons.account_circle, size: 120) : Container(),
@@ -635,22 +695,29 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
               ]),
             ],
           ),*/
-          SizedBox(height: height/1.3),
+          SizedBox(height: height / 1.3),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
-
               RawMaterialButton(
                 onPressed: () => _onCallLiveEnd(context),
                 child: Container(
                   padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    border: Border.all(width: 5,color: Colors.red),
-                    borderRadius: BorderRadius.all(Radius.circular(10))
-                  ),
-                  child: Row(
-                    children: [const Text('Leave  ',style: TextStyle(fontSize: 24,fontWeight: FontWeight.bold)),Image.asset(AppImage.leave,height: 25,width: 30,color: Colors.white,)]),
+                      color: Colors.red,
+                      border: Border.all(width: 5, color: Colors.red),
+                      borderRadius: BorderRadius.all(Radius.circular(10))),
+                  child: Row(children: [
+                    const Text('Leave  ',
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    Image.asset(
+                      AppImage.leave,
+                      height: 25,
+                      width: 30,
+                      color: Colors.white,
+                    )
+                  ]),
                 ),
                 elevation: 2.0,
               ),
@@ -661,88 +728,113 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     }
   }
 
-  Widget _panel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      alignment: Alignment.bottomCenter,
-      child: FractionallySizedBox(
-        heightFactor: 0.5,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 48),
-          child: ListView.builder(
-            reverse: true,
-            itemCount: _infoStrings.length,
-            itemBuilder: (BuildContext context, int index) {
-              if (_infoStrings.isEmpty) {
-                return const Text("null"); // return type can't be null, a widget was required
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 3,
-                  horizontal: 10,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 2,
-                          horizontal: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.yellowAccent,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          _infoStrings[index],
-                          style: TextStyle(color: Colors.blueGrey),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _viewRows() {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
     final views = _getRenderViews();
     switch (views.length) {
       case 1:
         return Container(
+            decoration: BoxDecoration(
+                border: Border.all(width: 2, color: Colors.black)),
             child: Column(
-          children: <Widget>[_videoView(views[0])],
-        ));
+              children: <Widget>[_videoView(views[0])],
+            ));
       case 2:
-        return Container(
-            child: Column(
+        return Stack(
+          // alignment: AlignmentDirectional.topEnd,
           children: <Widget>[
-            _expandedVideoRow([views[0]]),
-            _expandedVideoRow([views[1]])
+            SizedBox(
+                child: _expandedVideoRow([views[1]]),
+                height: height,
+                width: width),
+            Positioned(
+              right: 10,
+              top: 15,
+              child: Container(
+                  child: SizedBox(child: _expandedVideoRow([views[0]])),
+                  height: height / 3.6,
+                  width: width / 2.5,
+                  // margin: const EdgeInsets.only(top: 2,bottom: 2,left: 2,right: 2),
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                      border: Border.all(width: 2, color: Colors.black),
+                      borderRadius: const BorderRadius.all(Radius.circular(15)))
+              ),
+            )
           ],
-        ));
-      case 3:
-        return Container(
-            child: Column(
+        );
+      /*case 3:
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            _expandedVideoRow(views.sublist(0, 2)),
-            _expandedVideoRow(views.sublist(2, 3))
+            Container(
+              child: _expandedVideoRow(views.sublist(0, 1)),
+              height: height / 1.5,
+              width: width,
+            ),
+            Container(
+                child: _expandedVideoRow(views.sublist(1, 3)),
+                height: height / 3,
+                // margin: const EdgeInsets.only(top: 5),
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                    border: Border.all(width: 2, color: Colors.black),
+                    borderRadius: const BorderRadius.all(Radius.circular(10))))
           ],
-        ));
-      case 4:
-        return Container(
-            child: Column(
-          children: <Widget>[
-            _expandedVideoRow(views.sublist(0, 2)),
-            _expandedVideoRow(views.sublist(2, 4))
-          ],
-        ));
-      default:
+        );*/
+      default :
+        if(widget.callType == "video") {
+          return Container(
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    child: _expandedVideoRow(views.sublist(0, 1)),/*_expandedVideoRow([views[0]]),*/
+                    height: height / 1.5,
+                    width: width, decoration: BoxDecoration(
+                          border: Border.all(width: 2, color: Colors.black),
+                          borderRadius: const BorderRadius.all(
+                              Radius.circular(10)))
+
+                  ),
+                  Container(
+                      height: height / 3,
+                      width: width,
+                      // padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                          border: Border.all(width: 2, color: Colors.black),
+                          borderRadius: const BorderRadius.all(
+                              Radius.circular(10))),
+                      child: ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: views.length.clamp(2, views.length-1),
+                          itemBuilder: (context, index) {
+                            return Container(
+                              child: _videoViewList(views[index+1]),
+                              height: height / 3,
+                              width: width / 2,
+                              margin: const EdgeInsets.all(1),
+                              // padding: const EdgeInsets.only(right: 5),
+                                decoration: BoxDecoration(
+                                    border: Border.all(width: 2, color: Colors.black),
+                                    borderRadius: const BorderRadius.all(
+                                        Radius.circular(10)))
+                            );
+                          })),
+                  // Container(child: _expandedVideoRowUser(views.sublist(1, 4)),
+                  //     height: height/3,
+                  //     width: width,
+                  //     // margin: const EdgeInsets.only(top: 5),
+                  //     padding: const EdgeInsets.all(5),
+                  //     decoration: BoxDecoration(
+                  //         border: Border.all(width: 2,color: Colors.black),
+                  //         borderRadius: BorderRadius.all(const Radius.circular(10))
+                  //     )
+                  // )
+                ],
+              ));
+        }
     }
     return Container();
   }
@@ -751,25 +843,22 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     setState(() {
       muted = !muted;
     });
-    if(muted){
+    if (muted) {
       _engine.disableAudio();
-    }else{
+    } else {
       _engine.enableAudio();
     }
-
   }
 
   void _onCallSpeaker() {
     setState(() {
       speaker = !speaker;
     });
-    if(speaker){
+    if (speaker) {
       _engine.setEnableSpeakerphone(true);
-      // _engine.isSpeakerphoneEnabled();
-    }else{
+    } else {
       _engine.setEnableSpeakerphone(false);
     }
-
   }
 
   void _onSwitchCamera() {
@@ -780,7 +869,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     setState(() {
       camera = !camera;
     });
-    if(camera == true){
+    if (camera == true) {
       _engine.muteLocalVideoStream(true);
       // _engine.muteRemoteVideoStream(userId!, false);
       // _engine.disableVideo();
@@ -792,29 +881,33 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   void _onCallHold() {
-    setState(() {
-      hold = !hold;
-    });
-    if(hold){
-      _engine.muteLocalAudioStream(true);
-    }else{
-      _engine.muteLocalAudioStream(false);
+    if (hold) {
+      setState(() {
+        hold = !hold;
+        _engine.muteLocalAudioStream(hold);
+      });
+    } else {
+      setState(() {
+        hold = !hold;
+        _engine.muteLocalAudioStream(hold);
+      });
     }
   }
 
   void _onCallEnd(BuildContext context) {
     // Navigator.pop(context);
     _users.clear();
-    _engine.leaveChannel();
-    _engine.destroy();
+    _users.isNotEmpty ? _engine.leaveChannel() : null;
+    _users.isNotEmpty ?_engine.destroy() : null;
     Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()));
   }
+
   void _onCallLiveEnd(BuildContext context) {
     // Navigator.pop(context);
-    // _users.clear();
+    _users.clear();
     _engine.leaveChannel();
-    // _engine.destroy();
+    _engine.destroy();
     Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()));
   }
@@ -833,6 +926,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     _users.clear();
     _engine.leaveChannel();
     _engine.destroy();
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>const HomeScreen()));
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()));
   }
 }

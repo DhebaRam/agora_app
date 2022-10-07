@@ -6,7 +6,7 @@ class NavigationService {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   Future<dynamic> navigateTo(String routeName, String? channel, type, ClientRole clientRole, name) {
-    print("NavigationService 111....");
+    print("NavigationService 111.... $channel $type $clientRole $name");
     return navigatorKey.currentState!.pushNamed(routeName,arguments: ScreenArguments(channel!,type,clientRole,name,));
     /*,{"Channel":channel,"Type":type,"ClientRole":clientRole,"Name":name})*/
   }

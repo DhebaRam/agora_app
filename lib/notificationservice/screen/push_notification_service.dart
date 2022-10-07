@@ -52,6 +52,7 @@ class PushNotificationService {
     flutterLocalNotificationsPlugin.initialize(initSetttings, onSelectNotification: (message) async {});
 
     FirebaseMessaging.onMessage.listen((RemoteMessage? message) {
+      // print("111.1.111.1 ${message!.data}");
       _navigationService.navigateTo("/recivedScreen",message!.notification!.body, message.data.values.last, message.data.values.last=="Audience"? ClientRole.Audience : ClientRole.Broadcaster, message.data.values.first,);
 
       // Get.find<HomeController>().getNotificationsNumber();
@@ -73,7 +74,8 @@ class PushNotificationService {
               playSound: true,
               enableVibration: true,
               visibility: NotificationVisibility.public,
-              showWhen: true
+              showWhen: true,
+              autoCancel: true,
             ),
           ),
         );

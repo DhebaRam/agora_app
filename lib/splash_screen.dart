@@ -21,8 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 3), () async {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.containsKey("login")) {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
       } else {
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => const LoginPage()));

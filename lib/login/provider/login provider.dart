@@ -105,17 +105,18 @@ class LoginProvider extends ChangeNotifier {
     prefs.setBool("login", true);
   }
 
-  audioCallNotification(notificationToken, userName, phoneNumber, currentName, callType) async{
+  audioCallNotification(notificationToken, userName, phoneNumber, currentName, callType,call) async{
     debugPrint("Method called $notificationToken");
     debugPrint("Method called $userName");
     debugPrint("Method called $phoneNumber");
     debugPrint("Method called $currentName");
+    debugPrint("Method called $callType");
     final msg = jsonEncode({
       "registration_ids": <String>[
         "$notificationToken"
       ],
       "notification": {
-        "title": "$userName Coming Call",
+        "title": "$currentName $call",
         "body": "$phoneNumber",
         // "priority": "high",
         "android_channel_id": "pushnotificationapp",
@@ -131,7 +132,7 @@ class LoginProvider extends ChangeNotifier {
       var response = await http.post(
           Uri.parse('https://fcm.googleapis.com/fcm/send'),
           headers: {
-            'Authorization': 'key=AAAAKUAk4oU:APA91bGvpp8EFdMFmHtS8qNsDQFnre7h_wJ1bKCBNDZTitJbwjt8zPblaFnZW4PVgy155COyr1nUFa6txLAwvWSEn4H2bgTnDIW63OZa6rK2CgkwRUCmIQrtdmyVJS9qXZ6T6JPyfgrj',
+            'Authorization': 'key=AAAA6PwCfB8:APA91bExAx4JwP-aPn4zgveZVzoIZeIj5bRoflam8ywiOP7Gc_Gf8BG8ee9G8gzDgASi-_S0Y2zAU7dPp8HnYT-k5PLXni0D5cTln4fbUl0t2LJOXSpBOiNofAqFKnaaT4Bgi5f4XCkM',
             'Content-Type': 'application/json'
           },
           body: msg,
