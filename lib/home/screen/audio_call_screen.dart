@@ -275,6 +275,8 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         if (_users.length >= 1 && _infoStrings.isEmpty) {
           print("call end id part");
           _onNotReciverEnd(context);
+        }else if(_users.length == 0){
+          _onNotReciverEnd(context);
         }
       });
     }

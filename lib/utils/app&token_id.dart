@@ -1,5 +1,5 @@
 // const APP_ID = 'bd9a80723e09415ba2ddcbcbaa3dcbb7';
 const APP_ID = 'bd9a80723e09415ba2ddcbcbaa3dcbb7';
-const Token = '007eJxTYMhw2CdiaDTPbpHeb1e796dWPOFnN47qaIlbdOK2kNOED08VGJJSLBMtDMyNjFMNLE0MTZMSjVJSkpOSkxITjYF0krkZs0Py1hDH5OXa/SyMDBAI4nMwJKbnFyUmFhQwMAAAzT0iVA==';
+const Token = '007eJxTYLges+zMh+cchm25/aemKF8/kMBWV1IzTXYtj+OqWodbN+4rMCSlWCZaGJgbGacaWJoYmiYlGqWkJCclJyUmGgPpJPPfS52Tq7+7JO9f18fMyACBID4HQ2J6flFiYkEBAwMAvE8moA==';
 const channel = "agoraapp";
 
